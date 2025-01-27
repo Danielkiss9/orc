@@ -41,11 +41,19 @@ export class NamespaceScanner extends BaseResourceScanner<k8s.V1Namespace> {
         this.kubeService.coreApi.listNamespacedPod(listRequest),
         this.kubeService.coreApi.listNamespacedService(listRequest),
         this.kubeService.appsApi.listNamespacedDeployment(listRequest),
+        this.kubeService.coreApi.listNamespacedConfigMap(listRequest),
+        this.kubeService.coreApi.listNamespacedSecret(listRequest),
       ];
 
-      const [pods, services, deployments] = await Promise.all(promises);
+      const [pods, services, deployments, configmaps, secrets] = await Promise.all(promises);
 
-      return pods.items.length === 0 && services.items.length === 0 && deployments.items.length === 0;
+      return (
+        pods.items.length === 0 &&
+        services.items.length === 0 &&
+        deployments.items.length === 0 &&
+        configmaps.items.length === 0 &&
+        secrets.items.length === 0
+      );
     } catch (error) {
       this.logger.error(`Failed to check namespace ${namespace.metadata.name}: ${error.message}`);
       throw error;

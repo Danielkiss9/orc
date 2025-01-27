@@ -1,6 +1,15 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "defaultBase": "master",
+  "release": {
+    "projects": ["apps/*"],
+    "changelog": {
+      "automaticFromRef": true,
+      "projectChangelogs": {
+        "createRelease": "github"
+      }
+    }
+  },
   "plugins": [
     {
       "plugin": "@nx/eslint/plugin",
@@ -13,7 +22,9 @@
       "options": {
         "targetName": "test"
       },
-      "exclude": ["apps/operator-e2e/**/*"]
+      "exclude": [
+        "apps/operator-e2e/**/*"
+      ]
     },
     {
       "plugin": "@nx/webpack/plugin",
