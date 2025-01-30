@@ -16,7 +16,10 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
-    "paths": {}
+    "paths": {
+      "@orc/web/*": ["apps/web/*"],
+      "@orc/prisma": ["libs/prisma/src/index.ts"]
+    }
   },
   "exclude": ["node_modules", "tmp"]
 }
