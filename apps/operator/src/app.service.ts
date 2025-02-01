@@ -1,8 +1,8 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
-import { CronJob } from 'cron';
 import { ScannerService } from './scanner/scanner.service';
 import { ConfigService } from './config/config.service';
+import { ReporterService } from './reporter/reporter.service';
 
 @Injectable()
 export class AppService implements OnModuleInit {
@@ -12,23 +12,22 @@ export class AppService implements OnModuleInit {
     private readonly scannerService: ScannerService,
     private readonly configService: ConfigService,
     private readonly schedulerRegistry: SchedulerRegistry,
+    private readonly reporterService: ReporterService,
   ) {}
 
   async onModuleInit() {
-    // const schedule = this.configService.get().schedule;
-    // const job = new CronJob(schedule, this.runScan.bind(this));
-    // this.schedulerRegistry.addCronJob('scan', job);
-    // job.start();
-
-    this.runScan();
+    await this.runScan();
   }
 
   private async runScan() {
     try {
-      this.logger.log(`Running scan at ${new Date().toISOString()}`);
+      this.logger.log(`Starting scan at ${new Date().toISOString()}`);
+      console.log(`ScannerService: ${this.scannerService}`);
       const results = await this.scannerService.scan();
       this.logger.log(`Scan completed. Found ${results.summary.totalOrphaned} orphaned resources`);
-      return results;
+      this.logger.log(`Sending report to console`);
+      await this.reporterService.sendReport(results);
+      this.logger.log(`Report sent`);
     } catch (error) {
       this.logger.error(`Scan failed: ${error.message}`);
     }

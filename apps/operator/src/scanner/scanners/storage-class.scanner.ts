@@ -31,12 +31,15 @@ export class StorageClassScanner extends BaseResourceScanner<k8s.V1StorageClass>
     }
   }
 
-  async isOrphaned(sc: k8s.V1StorageClass): Promise<boolean> {
+  async isOrphaned(sc: k8s.V1StorageClass): Promise<{ isOrphaned: boolean; reason?: string }> {
     try {
-      return !(
-        (sc.metadata.annotations && sc.metadata.annotations[IS_DEFAULT_STORAGE_CLASS_ANNOTATION] === 'true') ||
-        this.usedStorageClasses.has(sc.metadata.name)
-      );
+      const isDefault = sc.metadata.annotations?.[IS_DEFAULT_STORAGE_CLASS_ANNOTATION] === 'true';
+      const isUsed = this.usedStorageClasses.has(sc.metadata.name);
+
+      return {
+        isOrphaned: !(isDefault || isUsed),
+        reason: !(isDefault || isUsed) ? `Storage class is not default and has no persistent volumes using it` : undefined,
+      };
     } catch (error) {
       this.logger.error(`Failed to check StorageClass ${sc.metadata.name}: ${error.message}`);
       throw error;
@@ -48,17 +51,9 @@ export class StorageClassScanner extends BaseResourceScanner<k8s.V1StorageClass>
       await this.kubeService.storageApi.deleteStorageClass({
         name: sc.metadata.name,
       });
-
-      return {
-        resource: sc,
-        success: true,
-      };
+      return { resource: sc, success: true };
     } catch (error) {
-      return {
-        resource: sc,
-        success: false,
-        error: error.message,
-      };
+      return { resource: sc, success: false, error: error.message };
     }
   }
 }

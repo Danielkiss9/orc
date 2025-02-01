@@ -9,9 +9,6 @@ export function ThemeToggle() {
   const { setTheme, theme } = useTheme();
   // Don't show in production
   // if (process.env.NODE_ENV === 'production') return null;
-  useEffect(() => {
-    console.log('theme', theme);
-  }, [theme]);
   return (
     <Button
       variant="ghost"

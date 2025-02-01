@@ -17,19 +17,22 @@ export class PdbScanner extends BaseResourceScanner<k8s.V1PodDisruptionBudget> {
       const response = await this.kubeService.policyApi.listPodDisruptionBudgetForAllNamespaces();
       return response.items.map((pdb) => enrichKubernetesObject(pdb, 'PodDisruptionBudget'));
     } catch (error) {
-      this.logger.error(`Failed to scan PodDisruptionBudgets (PDBs): ${error.message}`);
+      this.logger.error(`Failed to scan PDBs: ${error.message}`);
       throw error;
     }
   }
 
-  async isOrphaned(pdb: k8s.V1PodDisruptionBudget): Promise<boolean> {
+  async isOrphaned(pdb: k8s.V1PodDisruptionBudget): Promise<{ isOrphaned: boolean; reason?: string }> {
     try {
       if (!pdb.spec?.selector?.matchLabels) {
         const pods = await this.kubeService.coreApi.listNamespacedPod({
           namespace: pdb.metadata.namespace,
         });
 
-        return pods.items.length === 0;
+        return {
+          isOrphaned: pods.items.length === 0,
+          reason: pods.items.length === 0 ? 'No pods found in namespace without label selector' : undefined,
+        };
       }
 
       const labelSelector = getLabelSelector(pdb.spec.selector.matchLabels);
@@ -41,7 +44,12 @@ export class PdbScanner extends BaseResourceScanner<k8s.V1PodDisruptionBudget> {
         this.kubeService.appsApi.listNamespacedStatefulSet(request),
       ]);
 
-      return !pods.items.length && !deployments.items.length && !statefulsets.items.length;
+      const hasNoTargets = !pods.items.length && !deployments.items.length && !statefulsets.items.length;
+
+      return {
+        isOrphaned: hasNoTargets,
+        reason: hasNoTargets ? `No matching resources found for labels: ${JSON.stringify(pdb.spec.selector.matchLabels)}` : undefined,
+      };
     } catch (error) {
       this.logger.error(`Failed to check PDB ${pdb.metadata.namespace}/${pdb.metadata.name}: ${error.message}`);
       throw error;
@@ -54,17 +62,9 @@ export class PdbScanner extends BaseResourceScanner<k8s.V1PodDisruptionBudget> {
         name: pdb.metadata.name,
         namespace: pdb.metadata.namespace,
       });
-
-      return {
-        resource: pdb,
-        success: true,
-      };
+      return { resource: pdb, success: true };
     } catch (error) {
-      return {
-        resource: pdb,
-        success: false,
-        error: error.message,
-      };
+      return { resource: pdb, success: false, error: error.message };
     }
   }
 }

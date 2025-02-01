@@ -22,16 +22,19 @@ export class ServiceScanner extends BaseResourceScanner<k8s.V1Service> {
     }
   }
 
-  async isOrphaned(svc: k8s.V1Service): Promise<boolean> {
+  async isOrphaned(svc: k8s.V1Service): Promise<{ isOrphaned: boolean; reason?: string }> {
     try {
       const endpoints = await this.kubeService.coreApi.readNamespacedEndpoints({
         name: svc.metadata.name,
         namespace: svc.metadata.namespace,
       });
 
-      const hasEndpoints = endpoints.subsets?.length > 0;
+      const hasNoEndpoints = !endpoints.subsets?.length;
 
-      return !hasEndpoints;
+      return {
+        isOrphaned: hasNoEndpoints,
+        reason: hasNoEndpoints ? 'Service has no active endpoints/pods' : undefined,
+      };
     } catch (error) {
       this.logger.error(`Failed to check service ${svc.metadata.namespace}/${svc.metadata.name}: ${error.message}`);
       throw error;
@@ -44,17 +47,9 @@ export class ServiceScanner extends BaseResourceScanner<k8s.V1Service> {
         name: svc.metadata.name,
         namespace: svc.metadata.namespace,
       });
-
-      return {
-        resource: svc,
-        success: true,
-      };
+      return { resource: svc, success: true };
     } catch (error) {
-      return {
-        resource: svc,
-        success: false,
-        error: error.message,
-      };
+      return { resource: svc, success: false, error: error.message };
     }
   }
 }

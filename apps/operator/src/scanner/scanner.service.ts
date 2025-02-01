@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { BaseResourceScanner } from './base.scanner';
 import { ConfigService } from '../config/config.service';
-import { K8sResource, BatchScanReport, ScanReport } from '../types';
+import { K8sResource, BatchScanReport, ScanReport, OrphanedResource } from '../types';
 import { generateResourceName, getResourceAge, getResourceLabels } from '../utils/logger';
 import { SCANNERS_TOKEN } from './scanners.token';
 
@@ -41,7 +41,7 @@ export class ScannerService {
       }
 
       const resources = await scanner.scan();
-      const orphanedResources: T[] = [];
+      const orphanedResources: OrphanedResource[] = [];
       const processedResources: T[] = [];
       const skippedResources: T[] = [];
       const errors: string[] = [];
@@ -58,7 +58,10 @@ export class ScannerService {
           } else {
             processedResources.push(result.resource);
             if (result.isOrphaned) {
-              orphanedResources.push(result.resource);
+              orphanedResources.push({
+                resource: result.resource,
+                reason: result.reason,
+              });
             }
           }
           if (result.error) {
@@ -95,6 +98,7 @@ export class ScannerService {
   ): Promise<{
     resource: T;
     isOrphaned: boolean;
+    reason?: string;
     skipped: boolean;
     error?: string;
   }> {
@@ -103,7 +107,7 @@ export class ScannerService {
         return { resource, isOrphaned: false, skipped: true };
       }
 
-      const isOrphaned = await scanner.isOrphaned(resource);
+      const { isOrphaned, reason } = await scanner.isOrphaned(resource);
       const resourceName = generateResourceName(resource);
       const labels = getResourceLabels(resource);
 
@@ -112,6 +116,7 @@ export class ScannerService {
           ...(labels && { labels }),
           age: getResourceAge(resource),
           resource: resourceName,
+          reason,
         };
 
         this.logger.debug(`Orphaned resource detected: ${resourceName}`, context);
@@ -120,6 +125,7 @@ export class ScannerService {
           return {
             resource,
             isOrphaned,
+            reason,
             skipped: false,
           };
         }

@@ -22,17 +22,23 @@ export class IngressScanner extends BaseResourceScanner<k8s.V1Ingress> {
     }
   }
 
-  async isOrphaned(ingress: k8s.V1Ingress): Promise<boolean> {
+  async isOrphaned(ingress: k8s.V1Ingress): Promise<{ isOrphaned: boolean; reason?: string }> {
     try {
       const loadBalancerIngress = ingress.status?.loadBalancer?.ingress;
 
       if (!loadBalancerIngress || loadBalancerIngress.length === 0) {
-        return true;
+        return {
+          isOrphaned: true,
+          reason: 'Missing load balancer configuration',
+        };
       }
 
       const hasValidIngress = loadBalancerIngress.some((ing) => ing.hostname || ing.ip);
 
-      return !hasValidIngress;
+      return {
+        isOrphaned: !hasValidIngress,
+        reason: !hasValidIngress ? 'Load balancer has no valid IP or hostname' : undefined,
+      };
     } catch (error) {
       this.logger.error(`Failed to check ingress ${ingress.metadata.namespace}/${ingress.metadata.name}: ${error.message}`);
       throw error;

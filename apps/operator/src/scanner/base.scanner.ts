@@ -14,7 +14,7 @@ export abstract class BaseResourceScanner<T extends K8sResource> {
   preScan?(): Promise<void>;
 
   abstract scan(): Promise<T[]>;
-  abstract isOrphaned(resource: T): Promise<boolean>;
+  abstract isOrphaned(resource: T): Promise<{ isOrphaned: boolean; reason?: string }>;
   abstract cleanup(resource: T): Promise<CleanupResult<T>>;
 
   shouldProcess(resource: T): boolean {
