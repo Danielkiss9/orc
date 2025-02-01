@@ -5,6 +5,7 @@ import { getCurrentUser } from '@orc/web/lib/session';
 
 export async function getClusters() {
   try {
+    console.log('Fetching clusters');
     const user = await getCurrentUser();
 
     if (!user) {

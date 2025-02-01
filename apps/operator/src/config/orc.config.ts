@@ -1,18 +1,51 @@
+import { z } from 'zod';
 import { Injectable } from '@nestjs/common';
 
-@Injectable()
-export class OrcConfig {
-  dryRun: boolean = true;
-  ageThresholdDays: number = 7;
-  batchSize: number = 10;
-  ignoreAnnotations: string[] = ['orc/ignore-resource'];
-  schedule: string = '0 0 * * *'; // Every day at midnight
-  consoleUrl: string = 'http://localhost:3000';
-  clusterToken: string = 'token';
+export const OrcConfigSchema = z.object({
+  dryRun: z.boolean(),
+  ageThresholdDays: z.number().int().positive(),
+  batchSize: z.number().int().positive(),
+  ignoreAnnotations: z.array(z.string()),
+  schedule: z.string(),
+  consoleUrl: z.string().url(),
+  clusterToken: z.string().optional(),
+  registrationToken: z.string(),
+  namespace: z.string(),
+  operatorName: z.string(),
+});
 
-  constructor(config?: Partial<OrcConfig>) {
-    if (config) {
-      Object.assign(this, config);
+export type OrcConfigType = z.infer<typeof OrcConfigSchema>;
+
+@Injectable()
+export class OrcConfig implements OrcConfigType {
+  dryRun: boolean;
+  ageThresholdDays: number;
+  batchSize: number;
+  ignoreAnnotations: string[];
+  schedule: string;
+  consoleUrl: string;
+  registrationToken: string;
+  namespace: string;
+  operatorName: string;
+
+  constructor(overrideConfig: Partial<OrcConfigType>) {
+    const config = {
+      dryRun: process.env.ORC_DRY_RUN !== 'false',
+      ageThresholdDays: parseInt(process.env.ORC_AGE_THRESHOLD_DAYS || '7'),
+      batchSize: parseInt(process.env.ORC_BATCH_SIZE || '10'),
+      ignoreAnnotations: process.env.ORC_IGNORE_ANNOTATIONS?.split(',') || ['orc/ignore-resource'],
+      schedule: process.env.ORC_SCHEDULE || '0 0 * * *',
+      consoleUrl: process.env.ORC_CONSOLE_URL,
+      registrationToken: process.env.ORC_REGISTRATION_TOKEN,
+      namespace: process.env.NAMESPACE || 'orc',
+      operatorName: process.env.OPERATOR_NAME || 'orc-reporter',
+    };
+
+    if (overrideConfig) {
+      Object.assign(config, overrideConfig);
     }
+
+    const validated = OrcConfigSchema.parse(config);
+    Object.assign(this, validated);
   }
 }

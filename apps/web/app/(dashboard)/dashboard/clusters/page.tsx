@@ -4,33 +4,25 @@ import { DashboardHeader } from '@orc/web/components/dashboard/header';
 import { DashboardShell } from '@orc/web/components/dashboard/shell';
 import { columns } from './columns';
 import { DataTable } from '@orc/web/components/data-table/data-table';
-import { useCallback, useEffect, useState } from 'react';
-import { getClusters } from '@orc/web/actions/cluster';
-import { Cluster, OrphanedResource } from '@prisma/client';
+import type { Cluster } from '@prisma/client';
 import { DataTableSkeleton } from '@orc/web/components/shared/advanced-skeleton';
+import { useQuery } from '@tanstack/react-query';
+import { getClusters } from '@orc/web/actions/cluster';
+
+export type GetAllClustersResponse = Cluster & { _count: { orphanedResources: number } };
 
 export default function ClustersPage() {
-  const [clusters, setClusters] = useState<Cluster[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchClusters = useCallback(async () => {
-    try {
-      setIsLoading(true);
+  const {
+    data = [],
+    isLoading,
+    error,
+  } = useQuery<GetAllClustersResponse[]>({
+    queryKey: ['clusters'],
+    queryFn: async () => {
       const response = await getClusters();
-      console.log(response);
-      setClusters(response.clusters ?? []);
-    } catch (err) {
-      setError('Failed to load clusters');
-      console.error('Failed to fetch clusters:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchClusters();
-  }, [fetchClusters]);
+      return response.clusters as GetAllClustersResponse[];
+    },
+  });
 
   const renderContent = () => {
     if (isLoading) {
@@ -47,10 +39,10 @@ export default function ClustersPage() {
     }
 
     if (error) {
-      return <div className="flex items-center justify-center p-8 text-destructive">{error}</div>;
+      return <div className="flex items-center justify-center p-8 text-destructive">Failed to load clusters</div>;
     }
 
-    return <DataTable<Cluster & { _count: { orphanedResources: number } }> columns={columns} filterColumn="name" queryKey="clusters" />;
+    return <DataTable<GetAllClustersResponse> columns={columns} filterColumn="name" queryKey="clusters" initialData={data} />;
   };
 
   return (

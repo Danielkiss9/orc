@@ -63,7 +63,7 @@ model Cluster {
     lastSeen          DateTime?
     userId            String
     status            ClusterStatus      @default(PENDING)
-    user              User               @relation(fields: [userId], references: [id])
+    user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
     createdAt         DateTime           @default(now())
     updatedAt         DateTime           @updatedAt
     orphanedResources OrphanedResource[]
@@ -72,7 +72,7 @@ model Cluster {
 model OrphanedResource {
     id           String               @id @default(uuid())
     clusterId    String
-    cluster      Cluster              @relation(fields: [clusterId], references: [id])
+    cluster      Cluster              @relation(fields: [clusterId], references: [id], onDelete:Cascade)
     kind         String
     name         String
     namespace    String?

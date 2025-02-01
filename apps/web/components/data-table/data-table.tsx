@@ -24,20 +24,23 @@ interface DataTableProps<TData> {
   columns: ColumnDef<TData, any>[];
   filterColumn?: string;
   queryKey: string;
+  initialData?: TData[];
 }
 
-export function DataTable<TData extends Cluster>({ columns, filterColumn = 'name' }: DataTableProps<TData>) {
+export function DataTable<TData extends Cluster>({ columns, filterColumn = 'name', initialData }: DataTableProps<TData>) {
   const queryClient = useQueryClient();
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
-
+      
   const { data = [], isLoading } = useQuery<TData[]>({
     queryKey: ['clusters'],
     queryFn: async () => {
       const response = await getClusters();
       return response.clusters as TData[];
     },
+    initialData,
+    enabled: !initialData,
   });
 
   const table = useReactTable({

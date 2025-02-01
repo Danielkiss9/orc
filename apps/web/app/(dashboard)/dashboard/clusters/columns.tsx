@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { deleteCluster } from '@orc/web/actions/cluster/delete';
 import { DeleteClusterModal } from '@orc/web/components/modals/cluster-delete-modal';
 import { Cluster, OrphanedResource } from '@prisma/client';
+import { GetAllClustersResponse } from './page';
 
 const SortButton = ({ column, children }: { column: any; children: React.ReactNode }) => {
   const isSorted = column.getIsSorted();
@@ -35,7 +36,7 @@ const SortButton = ({ column, children }: { column: any; children: React.ReactNo
   );
 };
 
-export const columns: ColumnDef<Cluster & { _count: { orphanedResources: number } }>[] = [
+export const columns: ColumnDef<GetAllClustersResponse>[] = [
   {
     accessorKey: 'name',
     header: 'Cluster',
@@ -88,7 +89,7 @@ export const columns: ColumnDef<Cluster & { _count: { orphanedResources: number 
   },
   {
     id: 'actions',
-    cell: (props: CellContext<Cluster & { _count: { orphanedResources: number } }, unknown>) => {
+    cell: (props: CellContext<GetAllClustersResponse, unknown>) => {
       const [showDeleteModal, setShowDeleteModal] = useState(false);
 
       const handleDelete = async () => {

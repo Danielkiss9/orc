@@ -2,10 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '../config/config.service';
 import { BatchScanReport } from '../types';
 import axios from 'axios';
+import { TokenManagerService } from '../token-manager/token-manager.service';
 
 @Injectable()
 export class ReporterService {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly configService: ConfigService, private readonly tokenManagerService: TokenManagerService) {}
 
   async sendReport(report: BatchScanReport) {
     const payload = {
@@ -28,7 +29,7 @@ export class ReporterService {
 
     await axios.post(`${this.configService.get().consoleUrl}/api/clusters/orphaned-resources`, payload, {
       headers: {
-        Authorization: `Bearer ${this.configService.get().clusterToken}`,
+        Authorization: `Bearer ${this.tokenManagerService.getToken()}`,
       },
     });
   }
