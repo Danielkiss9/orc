@@ -11,10 +11,10 @@ import { generateRegistrationToken, checkClusterRegistration } from '@orc/web/ac
 interface ClusterConnectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConnectSuccess: (clusterData: any) => void;
+  onConnect?: () => Promise<void>;
 }
 
-export function ClusterConnectModal({ isOpen, onClose, onConnectSuccess }: ClusterConnectModalProps) {
+export function ClusterConnectModal({ isOpen, onClose, onConnect }: ClusterConnectModalProps) {
   const [step, setStep] = useState(1);
   const [clusterName, setClusterName] = useState('');
   const [registrationToken, setRegistrationToken] = useState<string | null>(null);
@@ -35,8 +35,10 @@ export function ClusterConnectModal({ isOpen, onClose, onConnectSuccess }: Clust
           const result = await checkClusterRegistration(registrationToken);
           if (result.registered) {
             setIsRegistered(true);
+            if (onConnect) {
+              await onConnect();
+            }
             clearInterval(intervalId);
-            onConnectSuccess(result.cluster);
             setIsChecking(false);
           }
         } catch (error) {
@@ -96,9 +98,7 @@ export function ClusterConnectModal({ isOpen, onClose, onConnectSuccess }: Clust
     setIsGeneratingToken(false);
   };
 
-  const installationCommand = registrationToken
-    ? `helm install cluster-operator ./chart --set clusterName=${clusterName} --set registrationToken=${registrationToken}`
-    : '';
+  const installationCommand = registrationToken ? `helm install cluster-operator ./chart --set registrationToken=${registrationToken}` : '';
 
   return (
     <Dialog

@@ -18,9 +18,10 @@
     "baseUrl": ".",
     "paths": {
       "@orc/prisma": ["libs/prisma/src/index.ts"],
-      "@orc/web/*": ["apps/web/*"],
       "@orc/redis": ["libs/redis-client/src/index.ts"],
-      "@orc/tokens": ["libs/tokens/src/index.ts"]
+      "@orc/tokens": ["libs/tokens/src/index.ts"],
+      "@orc/web/*": ["apps/web/*"],
+      "@orc/utils": ["libs/utils/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

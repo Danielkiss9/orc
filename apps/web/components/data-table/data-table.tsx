@@ -22,19 +22,35 @@ import { Cluster } from '@prisma/client';
 
 interface DataTableProps<TData> {
   columns: ColumnDef<TData, any>[];
-  filterColumn?: string;
+  searchableColumns?: string[];
+  searchPlaceholder?: string;
   queryKey: string;
   initialData?: TData[];
+  toolbarActions?: {
+    icon?: React.ReactNode;
+    label: string;
+    variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+    onClick: () => void;
+  }[];
+  showViewOptions?: boolean;
 }
 
-export function DataTable<TData extends Cluster>({ columns, filterColumn = 'name', initialData }: DataTableProps<TData>) {
+export function DataTable<TData extends Cluster>({
+  columns,
+  searchableColumns = ['name'],
+  searchPlaceholder = 'Search...',
+  queryKey,
+  initialData,
+  toolbarActions = [],
+  showViewOptions = true,
+}: DataTableProps<TData>) {
   const queryClient = useQueryClient();
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
-      
+
   const { data = [], isLoading } = useQuery<TData[]>({
-    queryKey: ['clusters'],
+    queryKey: [queryKey],
     queryFn: async () => {
       const response = await getClusters();
       return response.clusters as TData[];
@@ -59,17 +75,19 @@ export function DataTable<TData extends Cluster>({ columns, filterColumn = 'name
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     meta: {
-      onDelete: () => queryClient.invalidateQueries({ queryKey: ['clusters'] }),
+      onDelete: () => queryClient.invalidateQueries({ queryKey: [queryKey] }),
     },
   });
 
-  const onClusterConnect = (_: any) => {
-    queryClient.invalidateQueries({ queryKey: ['clusters'] });
-  };
-
   return (
     <div className="space-y-4 overflow-hidden bg-card text-card-foreground shadow-sm p-4 border rounded-lg w-full sm:max-w-full">
-      <DataTableToolbar table={table} filterColumn={filterColumn} onClusterConnect={onClusterConnect} />
+      <DataTableToolbar
+        table={table}
+        searchableColumns={searchableColumns}
+        placeholder={searchPlaceholder}
+        actions={toolbarActions}
+        showViewOptions={showViewOptions}
+      />
       <div className="rounded-md border overflow-hidden">
         <Table>
           <TableHeader>
@@ -84,7 +102,7 @@ export function DataTable<TData extends Cluster>({ columns, filterColumn = 'name
             ))}
           </TableHeader>
           <TableBody>
-            {isLoading ? (
+            {isLoading && !initialData ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
                   Loading...

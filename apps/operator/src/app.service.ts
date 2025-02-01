@@ -45,7 +45,7 @@ export class AppService implements OnModuleInit {
       await this.reporterService.sendReport(results);
       this.logger.log('Report sent successfully');
     } catch (error) {
-      this.logger.error(`Scan failed: ${error.message}`);
+      this.logger.error(`Scan failed: ${error}`);
     }
   }
 }

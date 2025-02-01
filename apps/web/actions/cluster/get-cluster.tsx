@@ -3,7 +3,7 @@
 import { prisma } from '@orc/prisma';
 import { getCurrentUser } from '@orc/web/lib/session';
 
-export async function getClusters() {
+export async function getCluster(clusterId: string) {
   try {
     const user = await getCurrentUser();
 
@@ -11,32 +11,30 @@ export async function getClusters() {
       return { success: false, error: 'Unauthorized' };
     }
 
-    const clusters = await prisma.cluster.findMany({
+    const cluster = await prisma.cluster.findFirst({
       where: {
+        id: clusterId,
         userId: user.id,
       },
       include: {
-        _count: {
-          select: {
-            orphanedResources: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
+        orphanedResources: true,
       },
     });
 
+    if (!cluster) {
+      return { success: false, error: 'Cluster not found', errorCode: 404 };
+    }
+
     return {
       success: true,
-      clusters,
+      cluster,
     };
   } catch (error) {
-    console.error('Failed to fetch clusters:', error);
+    console.error('Failed to fetch cluster:', error);
     return {
       success: false,
       error,
-      clusters: [],
+      cluster: null,
     };
   }
 }

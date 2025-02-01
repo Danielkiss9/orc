@@ -2,8 +2,9 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { BaseResourceScanner } from './base.scanner';
 import { ConfigService } from '../config/config.service';
 import { K8sResource, BatchScanReport, ScanReport, OrphanedResource } from '../types';
-import { generateResourceName, getResourceAge, getResourceLabels } from '../utils/logger';
+import { generateResourceName, getResourceLabels } from '../utils/logger';
 import { SCANNERS_TOKEN } from './scanners.token';
+import { getResourceAge } from '@orc/utils';
 
 @Injectable()
 export class ScannerService {
@@ -114,7 +115,7 @@ export class ScannerService {
       if (isOrphaned) {
         const context = {
           ...(labels && { labels }),
-          age: getResourceAge(resource),
+          age: getResourceAge(resource.metadata.creationTimestamp),
           resource: resourceName,
           reason,
         };

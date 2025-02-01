@@ -14,6 +14,7 @@ const orphanedResourceSchema = z.object({
   name: z.string().min(1, 'Resource name is required'),
   namespace: z.string().optional(),
   uid: z.string().min(1, 'Resource UID is required'),
+  age: z.string().optional(),
   owner: z
     .object({
       apiVersion: z.string().optional(),
@@ -55,6 +56,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized', details: parsedPayload.error.errors }, { status: 401 });
     }
 
+    const cluster = await prisma.cluster.findUnique({
+      where: { userId: parsedPayload.data.userId, id: parsedPayload.data.clusterId },
+    });
+
+    if (!cluster) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+
     const requestBody = await request.json();
     const parsedReport = reportSchema.safeParse(requestBody);
 
@@ -70,16 +79,32 @@ export async function POST(request: Request) {
       },
     });
 
+    console.log(parsedReport.data.orphanedResources)
+
     await prisma.$transaction(
       parsedReport.data.orphanedResources.map((resource) =>
-        prisma.orphanedResource.create({
-          data: {
+        prisma.orphanedResource.upsert({
+          where: {
+            clusterId_uid: {
+              clusterId: parsedPayload.data.clusterId,
+              uid: resource.uid,
+            },
+          },
+          update: {
+            name: resource.name,
+            namespace: resource.namespace,
+            reason: resource.reason,
+            age: resource.age,
+            status: 'PENDING',
+          },
+          create: {
             clusterId: parsedPayload.data.clusterId,
             kind: resource.kind,
             name: resource.name,
             namespace: resource.namespace,
             uid: resource.uid,
             reason: resource.reason,
+            age: resource.age,
             discoveredAt: new Date(),
             status: 'PENDING',
           },

@@ -72,17 +72,20 @@ model Cluster {
 model OrphanedResource {
     id           String               @id @default(uuid())
     clusterId    String
-    cluster      Cluster              @relation(fields: [clusterId], references: [id], onDelete:Cascade)
+    cluster      Cluster              @relation(fields: [clusterId], references: [id], onDelete: Cascade)
     kind         String
     name         String
     namespace    String?
-    uid          String // This is the resource id in the cluster
+    uid          String
     createdAt    DateTime             @default(now())
+    age          DateTime?
     discoveredAt DateTime             @default(now())
     deletedAt    DateTime?
     owner        String?
     reason       String?
     status       OrphanResourceStatus @default(PENDING)
+
+    @@unique([clusterId, uid])
 }
 
 enum OrphanResourceStatus {

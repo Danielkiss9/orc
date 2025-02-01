@@ -10,36 +10,31 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@orc/web/ui/custom-ui';
-import { ArrowDown, ArrowUp, ArrowUpDown, MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
 import { deleteCluster } from '@orc/web/actions/cluster/delete';
 import { DeleteClusterModal } from '@orc/web/components/modals/cluster-delete-modal';
-import { Cluster, OrphanedResource } from '@prisma/client';
 import { GetAllClustersResponse } from './page';
-
-const SortButton = ({ column, children }: { column: any; children: React.ReactNode }) => {
-  const isSorted = column.getIsSorted();
-
-  return (
-    <Button variant="ghost" onClick={() => column.toggleSorting(isSorted === 'asc')} className="group hover:bg-transparent px-0">
-      {children}
-      <div className="ml-2">
-        {isSorted === 'asc' ? (
-          <ArrowUp className="h-4 w-4" />
-        ) : isSorted === 'desc' ? (
-          <ArrowDown className="h-4 w-4" />
-        ) : (
-          <ArrowUpDown className="h-4 w-4 opacity-50 group-hover:opacity-100" />
-        )}
-      </div>
-    </Button>
-  );
-};
+import { useRouter } from 'next/navigation';
+import { SortButton } from '@orc/web/components/data-table/utils';
 
 export const columns: ColumnDef<GetAllClustersResponse>[] = [
   {
     accessorKey: 'name',
     header: 'Cluster',
+    cell: ({ row }) => {
+      const { push } = useRouter();
+
+      return (
+        <div className='cursor-pointer underline'
+          onClick={() => {
+            push(`/dashboard/clusters/${row.original.id}`);
+          }}
+        >
+          {row.original.name}
+        </div>
+      );
+    },
   },
   {
     accessorKey: 'version',
@@ -64,7 +59,13 @@ export const columns: ColumnDef<GetAllClustersResponse>[] = [
 
       return (
         <div className="flex items-center">
-          {_count.orphanedResources > 0 ? <Badge variant="error">{_count.orphanedResources}</Badge> : <Badge variant="success">0</Badge>}
+          {_count.orphanedResources === 0 ? (
+            <Badge variant="success">{_count.orphanedResources}</Badge>
+          ) : _count.orphanedResources > 10 ? (
+            <Badge variant="error">{_count.orphanedResources}</Badge>
+          ) : (
+            <Badge variant="warning">{_count.orphanedResources}</Badge>
+          )}
         </div>
       );
     },
@@ -91,6 +92,7 @@ export const columns: ColumnDef<GetAllClustersResponse>[] = [
     id: 'actions',
     cell: (props: CellContext<GetAllClustersResponse, unknown>) => {
       const [showDeleteModal, setShowDeleteModal] = useState(false);
+      const { push } = useRouter();
 
       const handleDelete = async () => {
         await deleteCluster(props.row.original.id);
@@ -108,7 +110,13 @@ export const columns: ColumnDef<GetAllClustersResponse>[] = [
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem>Open</DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  push(`/dashboard/clusters/${props.row.original.id}`);
+                }}
+              >
+                View
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowDeleteModal(true)} className="text-destructive">
                 Delete
               </DropdownMenuItem>

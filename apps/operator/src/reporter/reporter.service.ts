@@ -19,6 +19,7 @@ export class ReporterService {
           uid: resource.metadata.uid,
           owner: resource.metadata.ownerReferences?.[0],
           discoveredAt: new Date(),
+          age: resource.metadata.creationTimestamp,
           reason,
           labels: resource.metadata.labels,
           annotations: resource.metadata.annotations,
