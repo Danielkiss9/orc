@@ -1,5 +1,10 @@
 import { V1ObjectMeta } from '@kubernetes/client-node';
 
+export interface OrphanedResource {
+  resource: K8sResource;
+  reason?: string;
+}
+
 export interface K8sResource {
   metadata?: V1ObjectMeta;
   kind?: string;
@@ -15,7 +20,7 @@ export interface CleanupResult<T extends K8sResource> {
 export interface ScanReport<T extends K8sResource> {
   resourceType: string;
   totalResources: number;
-  orphanedResources: T[];
+  orphanedResources: OrphanedResource[]; 
   processedResources: T[];
   skippedResources: T[];
   errors: string[];

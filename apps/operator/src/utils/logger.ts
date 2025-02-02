@@ -1,4 +1,3 @@
-import ms from 'ms';
 import { K8sResource } from '../types';
 
 export const generateResourceName = (resource: K8sResource): string => {
@@ -17,12 +16,4 @@ export const getResourceLabels = (resource: K8sResource): string => {
   return Object.entries(resource.metadata.labels)
     .map(([key, value]) => `${key}=${value}`)
     .join(', ');
-};
-
-export const getResourceAge = (resource: K8sResource): string => {
-  const creationTimestamp = new Date(resource.metadata.creationTimestamp);
-  const now = new Date();
-  const ageMs = now.getTime() - creationTimestamp.getTime();
-
-  return ms(ageMs, { long: false });
 };

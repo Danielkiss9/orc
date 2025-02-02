@@ -1,0 +1,19 @@
+{
+  "name": "redis-client",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/redis-client/src",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/redis-client",
+        "main": "libs/redis-client/src/index.ts",
+        "tsConfig": "libs/redis-client/tsconfig.lib.json",
+        "assets": ["libs/redis-client/*.md"]
+      }
+    }
+  }
+}

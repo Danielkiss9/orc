@@ -41,4 +41,5 @@ export * from './components/breadcrumb';
 export * from './components/toggle';
 export * from './components/toggle-group';
 export * from './components/drawer';
+export * from './components/hover-card';
 export * from './utils';

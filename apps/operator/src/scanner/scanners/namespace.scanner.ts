@@ -22,60 +22,58 @@ export class NamespaceScanner extends BaseResourceScanner<k8s.V1Namespace> {
     }
   }
 
-  async isOrphaned(namespace: k8s.V1Namespace): Promise<boolean> {
-    if (
-      namespace.metadata.name === 'default' ||
-      namespace.metadata.name === 'kube-system' ||
-      namespace.metadata.name === 'kube-public' ||
-      namespace.metadata.name === 'kube-node-lease'
-    ) {
-      return false;
+  async isOrphaned(namespace: k8s.V1Namespace): Promise<{ isOrphaned: boolean; reason?: string }> {
+    if (this.isSystemNamespace(namespace.metadata.name)) {
+      return { isOrphaned: false };
     }
 
-    const listRequest = {
-      namespace: namespace.metadata.name,
-    };
-
     try {
-      const promises = [
-        this.kubeService.coreApi.listNamespacedPod(listRequest),
-        this.kubeService.coreApi.listNamespacedService(listRequest),
-        this.kubeService.appsApi.listNamespacedDeployment(listRequest),
-        this.kubeService.coreApi.listNamespacedConfigMap(listRequest),
-        this.kubeService.coreApi.listNamespacedSecret(listRequest),
-      ];
+      const resources = await this.checkNamespaceResources(namespace.metadata.name);
+      const isEmpty = Object.values(resources).every((count) => count === 0);
 
-      const [pods, services, deployments, configmaps, secrets] = await Promise.all(promises);
-
-      return (
-        pods.items.length === 0 &&
-        services.items.length === 0 &&
-        deployments.items.length === 0 &&
-        configmaps.items.length === 0 &&
-        secrets.items.length === 0
-      );
+      return {
+        isOrphaned: isEmpty,
+        reason: isEmpty
+          ? `Empty namespace with no resources (${Object.entries(resources)
+              .map(([type]) => type)
+              .join(', ')})`
+          : undefined,
+      };
     } catch (error) {
       this.logger.error(`Failed to check namespace ${namespace.metadata.name}: ${error.message}`);
       throw error;
     }
   }
 
+  private async checkNamespaceResources(namespaceName: string) {
+    const [pods, services, deployments, configmaps, secrets] = await Promise.all([
+      this.kubeService.coreApi.listNamespacedPod({ namespace: namespaceName }),
+      this.kubeService.coreApi.listNamespacedService({ namespace: namespaceName }),
+      this.kubeService.appsApi.listNamespacedDeployment({ namespace: namespaceName }),
+      this.kubeService.coreApi.listNamespacedConfigMap({ namespace: namespaceName }),
+      this.kubeService.coreApi.listNamespacedSecret({ namespace: namespaceName }),
+    ]);
+
+    return {
+      pods: pods.items.length,
+      services: services.items.length,
+      deployments: deployments.items.length,
+      configmaps: configmaps.items.length,
+      secrets: secrets.items.length,
+    };
+  }
+
+  private isSystemNamespace(name: string): boolean {
+    const systemNamespaces = ['default', 'kube-system', 'kube-public', 'kube-node-lease'];
+    return systemNamespaces.includes(name);
+  }
+
   async cleanup(namespace: k8s.V1Namespace): Promise<CleanupResult<k8s.V1Namespace>> {
     try {
-      await this.kubeService.coreApi.deleteNamespace({
-        name: namespace.metadata.name,
-      });
-
-      return {
-        resource: namespace,
-        success: true,
-      };
+      await this.kubeService.coreApi.deleteNamespace({ name: namespace.metadata.name });
+      return { resource: namespace, success: true };
     } catch (error) {
-      return {
-        resource: namespace,
-        success: false,
-        error: error.message,
-      };
+      return { resource: namespace, success: false, error: error.message };
     }
   }
 }

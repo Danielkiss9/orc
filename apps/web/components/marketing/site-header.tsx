@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 import { siteConfig } from '@orc/web/config/site';
-import { Menu } from 'lucide-react';
 import Drawer from '@orc/web/ui/magicui/ui/drawer';
 
 export const SiteHeader = () => {

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import * as k8s from '@kubernetes/client-node';
 
 @Injectable()
@@ -9,6 +9,9 @@ export class KubeService {
   private _networkingApi: k8s.NetworkingV1Api;
   private _policyApi: k8s.PolicyV1Api;
   private _storageApi: k8s.StorageV1Api;
+  private _versionApi: k8s.VersionApi;
+
+  private logger = new Logger(KubeService.name);
 
   constructor() {
     this.kc = new k8s.KubeConfig();
@@ -19,6 +22,7 @@ export class KubeService {
     this._networkingApi = this.kc.makeApiClient(k8s.NetworkingV1Api);
     this._policyApi = this.kc.makeApiClient(k8s.PolicyV1Api);
     this._storageApi = this.kc.makeApiClient(k8s.StorageV1Api);
+    this._versionApi = this.kc.makeApiClient(k8s.VersionApi);
   }
 
   get client() {
@@ -43,5 +47,25 @@ export class KubeService {
 
   get storageApi() {
     return this._storageApi;
+  }
+
+  async getClusterVersion(): Promise<string> {
+    try {
+      const version = await this._versionApi.getCode();
+      return version.gitVersion;
+    } catch (error) {
+      this.logger.error(`Failed to get cluster version: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async getNodeCount(): Promise<number> {
+    try {
+      const nodes = await this._coreApi.listNode();
+      return nodes.items.length;
+    } catch (error) {
+      this.logger.error(`Failed to get node count: ${error.message}`);
+      throw error;
+    }
   }
 }

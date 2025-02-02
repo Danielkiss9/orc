@@ -22,7 +22,6 @@ export function NavBar({
 }: NavBarProps) {
   const scrolled = useScroll(50);
   const { data: session, status } = useSession();
-  console.log("session", session);
   return (
     <header
       className={`sticky top-0 z-40 flex w-full justify-center bg-background/60 backdrop-blur-xl transition-all ${

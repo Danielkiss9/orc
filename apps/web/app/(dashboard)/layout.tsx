@@ -13,7 +13,7 @@ import { Toaster } from '@orc/web/ui/custom-ui';
 import { TailwindIndicator } from '@orc/web/components/tailwind-indicator';
 import React from 'react';
 import { Providers } from './providers';
-
+import { Breadcrumbs } from '@orc/web/components/breadcrumbs/breadcrumbs';
 import '@orc/web/ui/custom-ui/styles/globals.css';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@orc/web/lib/session';
@@ -75,6 +75,7 @@ async function DashboardLayout({ children }: DashboardLayoutProps) {
         <header className="sticky top-0 z-50 flex h-14 bg-background px-4 lg:h-[60px] xl:pr-8 xl:pl-4">
           <MaxWidthWrapper className="flex max-w-7xl items-center gap-x-3 px-0 lg:px-0 xl:px-0 2xl:px-6">
             <MobileSheetSidebar links={links} />
+            <Breadcrumbs className="hidden sm:block" />
             <div className="w-full flex-1"></div>
             <ModeToggle />
             <UserAccountNav user={user} />
