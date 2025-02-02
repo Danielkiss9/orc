@@ -3,7 +3,13 @@
 import { prisma } from '@orc/prisma';
 import { getCurrentUser } from '@orc/web/lib/session';
 
-export async function getClusters() {
+export type GetClustersParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+};
+
+export async function getClusters({ page = 1, limit = 10, search }: GetClustersParams = {}) {
   try {
     const user = await getCurrentUser();
 
@@ -11,25 +17,43 @@ export async function getClusters() {
       return { success: false, error: 'Unauthorized' };
     }
 
-    const clusters = await prisma.cluster.findMany({
-      where: {
-        userId: user.id,
-      },
-      include: {
-        _count: {
-          select: {
-            orphanedResources: true,
+    const where = {
+      userId: user.id,
+      ...(search && {
+        name: {
+          contains: search,
+        },
+      }),
+    };
+
+    const [clusters, total] = await Promise.all([
+      prisma.cluster.findMany({
+        where,
+        include: {
+          _count: {
+            select: {
+              orphanedResources: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.cluster.count({ where }),
+    ]);
 
     return {
       success: true,
       clusters,
+      pagination: {
+        total,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+        limit,
+      },
     };
   } catch (error) {
     console.error('Failed to fetch clusters:', error);
@@ -37,6 +61,12 @@ export async function getClusters() {
       success: false,
       error,
       clusters: [],
+      pagination: {
+        total: 0,
+        totalPages: 0,
+        currentPage: page,
+        limit,
+      },
     };
   }
 }

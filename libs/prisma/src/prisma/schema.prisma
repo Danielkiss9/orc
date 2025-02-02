@@ -83,12 +83,12 @@ model OrphanedResource {
     deletedAt    DateTime?
     owner        String?
     reason       String?
-    status       OrphanResourceStatus @default(PENDING)
+    status       OrphanedResourceStatus @default(PENDING)
 
     @@unique([clusterId, uid])
 }
 
-enum OrphanResourceStatus {
+enum OrphanedResourceStatus {
     PENDING
     DELETED
     IGNORED

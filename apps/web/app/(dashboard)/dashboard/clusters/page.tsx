@@ -13,23 +13,49 @@ import { getClusters } from '@orc/web/actions/cluster';
 import { ClusterConnectModal } from '@orc/web/components/modals/cluster-connect-modal';
 
 export type GetAllClustersResponse = Cluster & { _count: { orphanedResources: number } };
+
+interface ClusterQueryResult {
+  data: GetAllClustersResponse[];
+  pagination: {
+    total: number;
+    totalPages: number;
+    currentPage: number;
+    limit: number;
+  };
+}
+
 export const GET_ALL_CLUSTERS_QUERY_KEY = 'clusters';
 
 export default function ClustersPage() {
   const queryClient = useQueryClient();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
-  const {
-    data = [],
-    isLoading,
-    error,
-  } = useQuery<GetAllClustersResponse[]>({
-    queryKey: [GET_ALL_CLUSTERS_QUERY_KEY],
+  const { data: initialData } = useQuery<ClusterQueryResult>({
+    queryKey: [GET_ALL_CLUSTERS_QUERY_KEY, 'initial'],
     queryFn: async () => {
-      const response = await getClusters();
-      return response.clusters as GetAllClustersResponse[];
+      const response = await getClusters({ page: 1, limit: 10 });
+      if (!response.success) {
+        throw new Error('Failed to fetch clusters');
+      }
+
+      return {
+        data: response.clusters as GetAllClustersResponse[],
+        pagination: response.pagination!,
+      };
     },
   });
+
+  const fetchClusters = async ({ page, limit, search }: { page: number; limit: number; search?: string }): Promise<ClusterQueryResult> => {
+    const response = await getClusters({ page, limit, search });
+    if (!response.success) {
+      throw new Error('Failed to fetch clusters');
+    }
+
+    return {
+      data: response.clusters as GetAllClustersResponse[],
+      pagination: response.pagination!,
+    };
+  };
 
   const toolbarActions = [
     {
@@ -39,9 +65,10 @@ export default function ClustersPage() {
     },
   ];
 
-  const renderContent = () => {
-    if (isLoading) {
-      return (
+  return (
+    <DashboardShell>
+      <DashboardHeader heading="Clusters" text="Here you can see all of your clusters and their status." />
+      {!initialData ? (
         <DataTableSkeleton
           columnCount={5}
           searchableColumnCount={1}
@@ -50,36 +77,23 @@ export default function ClustersPage() {
           cellWidths={['10rem', '20rem', '12rem', '12rem', '8rem']}
           shrinkZero
         />
-      );
-    }
-
-    if (error) {
-      return <div className="flex items-center justify-center p-8 text-destructive">Failed to load clusters</div>;
-    }
-
-    return (
-      <>
-        <DataTable<GetAllClustersResponse>
-          columns={columns}
-          searchableColumns={["name"]}
-          searchPlaceholder='Search clusters...'
-          queryKey="clusters"
-          initialData={data}
-          toolbarActions={toolbarActions}
-        />
-        <ClusterConnectModal
-          isOpen={isImportModalOpen}
-          onClose={() => setIsImportModalOpen(false)}
-          onConnect={async () => await queryClient.invalidateQueries({ queryKey: [GET_ALL_CLUSTERS_QUERY_KEY] })}
-        />
-      </>
-    );
-  };
-
-  return (
-    <DashboardShell>
-      <DashboardHeader heading="Clusters" text="Here you can see all of your clusters and their status." />
-      {renderContent()}
+      ) : (
+        <>
+          <DataTable<GetAllClustersResponse>
+            columns={columns}
+            searchPlaceholder="Search clusters..."
+            queryKey={GET_ALL_CLUSTERS_QUERY_KEY}
+            queryFn={fetchClusters}
+            initialData={initialData}
+            toolbarActions={toolbarActions}
+          />
+          <ClusterConnectModal
+            isOpen={isImportModalOpen}
+            onClose={() => setIsImportModalOpen(false)}
+            onConnect={async () => await queryClient.invalidateQueries({ queryKey: [GET_ALL_CLUSTERS_QUERY_KEY] })}
+          />
+        </>
+      )}
     </DashboardShell>
   );
 }

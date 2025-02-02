@@ -5,6 +5,8 @@ import { X } from 'lucide-react';
 import { Button } from '@orc/web/ui/custom-ui';
 import { Input } from '@orc/web/ui/custom-ui';
 import { DataTableViewOptions } from './data-table-view-options';
+import { useState } from 'react';
+import { useDebouncedCallback } from 'use-debounce';
 
 interface ToolbarAction {
   icon?: React.ReactNode;
@@ -15,23 +17,33 @@ interface ToolbarAction {
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>;
-  searchableColumns: string[];
   placeholder?: string;
   actions?: ToolbarAction[];
   showViewOptions?: boolean;
+  onSearch?: (value: string) => void;
 }
 
 export function DataTableToolbar<TData>({
   table,
-  searchableColumns,
   placeholder = 'Search...',
   actions = [],
   showViewOptions = true,
+  onSearch,
 }: DataTableToolbarProps<TData>) {
-  const isFiltered = table.getState().globalFilter;
+  const [searchValue, setSearchValue] = useState('');
+
+  const debouncedSearch = useDebouncedCallback((value: string) => {
+    onSearch?.(value);
+  }, 300);
 
   const handleSearch = (value: string) => {
-    table.setGlobalFilter(value);
+    setSearchValue(value);
+    debouncedSearch(value);
+  };
+
+  const handleReset = () => {
+    setSearchValue('');
+    onSearch?.('');
   };
 
   return (
@@ -39,12 +51,12 @@ export function DataTableToolbar<TData>({
       <div className="flex flex-1 items-center space-x-2">
         <Input
           placeholder={placeholder}
-          value={(table.getState().globalFilter as string) ?? ''}
+          value={searchValue}
           onChange={(event) => handleSearch(event.target.value)}
           className="h-8 w-[150px] lg:w-[250px]"
         />
-        {isFiltered && (
-          <Button variant="ghost" onClick={() => handleSearch('')} className="h-8 px-2 lg:px-3">
+        {searchValue && (
+          <Button variant="ghost" onClick={handleReset} className="h-8 px-2 lg:px-3">
             Reset
             <X className="ml-2 h-4 w-4" />
           </Button>

@@ -8,7 +8,6 @@ interface ClusterInfoCardProps {
 }
 
 export function ClusterInfoCard({ cluster }: ClusterInfoCardProps) {
-  console.log(cluster);
   return (
     <Card>
       <CardHeader>

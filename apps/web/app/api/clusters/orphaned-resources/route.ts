@@ -79,10 +79,35 @@ export async function POST(request: Request) {
       },
     });
 
-    console.log(parsedReport.data.orphanedResources)
+    // Get all existing resources for this cluster that aren't already marked as DELETED
+    const existingResources = await prisma.orphanedResource.findMany({
+      where: {
+        clusterId: parsedPayload.data.clusterId,
+        status: { not: 'DELETED' },
+      },
+      select: { uid: true },
+    });
 
-    await prisma.$transaction(
-      parsedReport.data.orphanedResources.map((resource) =>
+    const reportResourceUids = new Set(parsedReport.data.orphanedResources.map((resource) => resource.uid));
+    const resourcesToMarkDeleted = existingResources.filter((resource) => !reportResourceUids.has(resource.uid));
+
+    await prisma.$transaction([
+      // Mark resources as DELETED if they're no longer present in the report
+      prisma.orphanedResource.updateMany({
+        where: {
+          AND: [
+            { clusterId: parsedPayload.data.clusterId },
+            { uid: { in: resourcesToMarkDeleted.map((resource) => resource.uid) } },
+            { status: { not: 'DELETED' } },
+          ],
+        },
+        data: {
+          status: 'DELETED',
+          deletedAt: new Date(),
+        },
+      }),
+      // Upsert current resources
+      ...parsedReport.data.orphanedResources.map((resource) =>
         prisma.orphanedResource.upsert({
           where: {
             clusterId_uid: {
@@ -96,6 +121,7 @@ export async function POST(request: Request) {
             reason: resource.reason,
             age: resource.age,
             status: 'PENDING',
+            deletedAt: null, // Clear deletedAt if the resource reappears
           },
           create: {
             clusterId: parsedPayload.data.clusterId,
@@ -110,11 +136,11 @@ export async function POST(request: Request) {
           },
         }),
       ),
-    );
+    ]);
 
     return new Response('OK');
   } catch (error) {
-    console.error('Failed to record orphaned resource:', error);
+    console.error('Failed to process orphaned resources:', error);
     return new Response('Internal Server Error', { status: 500 });
   }
 }

@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getClusters } from '@orc/web/actions/cluster';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -18,14 +17,29 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@orc/web/ui/custom-ui';
 import { DataTablePagination } from './data-table-pagination';
 import { DataTableToolbar } from './data-table-toolbar';
-import { Cluster } from '@prisma/client';
 
 interface DataTableProps<TData> {
   columns: ColumnDef<TData, any>[];
-  searchableColumns?: string[];
   searchPlaceholder?: string;
   queryKey: string;
-  initialData?: TData[];
+  queryFn: (params: { page: number; limit: number; search?: string }) => Promise<{
+    data: TData[];
+    pagination: {
+      total: number;
+      totalPages: number;
+      currentPage: number;
+      limit: number;
+    };
+  }>;
+  initialData?: {
+    data: TData[];
+    pagination: {
+      total: number;
+      totalPages: number;
+      currentPage: number;
+      limit: number;
+    };
+  };
   toolbarActions?: {
     icon?: React.ReactNode;
     label: string;
@@ -35,11 +49,11 @@ interface DataTableProps<TData> {
   showViewOptions?: boolean;
 }
 
-export function DataTable<TData extends Cluster>({
+export function DataTable<TData>({
   columns,
-  searchableColumns = ['name'],
   searchPlaceholder = 'Search...',
   queryKey,
+  queryFn,
   initialData,
   toolbarActions = [],
   showViewOptions = true,
@@ -48,32 +62,50 @@ export function DataTable<TData extends Cluster>({
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [{ pageIndex, pageSize }, setPagination] = React.useState({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+  const [searchQuery, setSearchQuery] = React.useState<string>('');
+  const [isFirstLoad, setIsFirstLoad] = React.useState(true);
 
-  const { data = [], isLoading } = useQuery<TData[]>({
-    queryKey: [queryKey],
+  const { data } = useQuery({
+    queryKey: [queryKey, pageIndex, pageSize, searchQuery],
     queryFn: async () => {
-      const response = await getClusters();
-      return response.clusters as TData[];
+      const result = await queryFn({
+        page: pageIndex + 1,
+        limit: pageSize,
+        search: searchQuery,
+      });
+      setIsFirstLoad(false);
+      return result;
     },
-    initialData,
-    enabled: !initialData,
+    initialData: isFirstLoad ? initialData : undefined,
+    placeholderData: (previousData) => previousData,
   });
 
   const table = useReactTable({
-    data,
+    data: data?.data ?? [],
     columns,
     state: {
       sorting,
       columnVisibility,
       columnFilters,
+      pagination: {
+        pageIndex,
+        pageSize,
+      },
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    pageCount: data?.pagination?.totalPages ?? -1,
+    manualPagination: true,
     meta: {
       onDelete: () => queryClient.invalidateQueries({ queryKey: [queryKey] }),
     },
@@ -83,12 +115,12 @@ export function DataTable<TData extends Cluster>({
     <div className="space-y-4 overflow-hidden bg-card text-card-foreground shadow-sm p-4 border rounded-lg w-full sm:max-w-full">
       <DataTableToolbar
         table={table}
-        searchableColumns={searchableColumns}
         placeholder={searchPlaceholder}
         actions={toolbarActions}
         showViewOptions={showViewOptions}
+        onSearch={setSearchQuery}
       />
-      <div className="rounded-md border overflow-hidden">
+      <div className="rounded-md border overflow-hidden relative">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -102,13 +134,7 @@ export function DataTable<TData extends Cluster>({
             ))}
           </TableHeader>
           <TableBody>
-            {isLoading && !initialData ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  Loading...
-                </TableCell>
-              </TableRow>
-            ) : table.getRowModel().rows?.length ? (
+            {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
                   {row.getVisibleCells().map((cell) => (
@@ -126,7 +152,7 @@ export function DataTable<TData extends Cluster>({
           </TableBody>
         </Table>
       </div>
-      <DataTablePagination table={table} />
+      <DataTablePagination table={table} totalItems={data?.pagination?.total ?? 0} />
     </div>
   );
 }
