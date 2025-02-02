@@ -8,7 +8,6 @@ import { enrichKubernetesObject } from '../../utils/kube';
 
 @Injectable()
 export class PersistentVolumeScanner extends BaseResourceScanner<k8s.V1PersistentVolume> {
-
   constructor(private readonly kubeService: KubeService, config: ConfigService) {
     super(config);
   }
@@ -23,8 +22,12 @@ export class PersistentVolumeScanner extends BaseResourceScanner<k8s.V1Persisten
     }
   }
 
-  async isOrphaned(pv: k8s.V1PersistentVolume): Promise<boolean> {
-    return pv.status?.phase !== 'Bound';
+  async isOrphaned(pv: k8s.V1PersistentVolume): Promise<{ isOrphaned: boolean; reason?: string }> {
+    const isNotBound = pv.status?.phase !== 'Bound';
+    return {
+      isOrphaned: isNotBound,
+      reason: isNotBound ? 'The PersistentVolume is not bound' : undefined,
+    };
   }
 
   async cleanup(pv: k8s.V1PersistentVolume): Promise<CleanupResult<k8s.V1PersistentVolume>> {
