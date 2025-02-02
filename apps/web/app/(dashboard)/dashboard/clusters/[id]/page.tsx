@@ -1,89 +1,26 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
 import { DashboardShell } from '@orc/web/components/dashboard/shell';
-import { DataTableSkeleton } from '@orc/web/components/shared/advanced-skeleton';
-import { DataTable } from '@orc/web/components/data-table/data-table';
-import { columns } from './orphaned-resources-columns';
-import { getClusterBasicInfo, getOrphanedResources } from '@orc/web/actions/cluster';
-import { Alert, AlertDescription, AlertTitle, Skeleton } from '@orc/web/ui/custom-ui';
+import { Alert, AlertDescription, AlertTitle } from '@orc/web/ui/custom-ui';
 import { AlertTriangle } from 'lucide-react';
 import { BreadcrumbItems } from '@orc/web/components/breadcrumbs/breadcrumbs';
 import { DashboardHeader } from '@orc/web/components/dashboard/header';
-import { OrphanedResource } from '@prisma/client';
-import { useState } from 'react';
-
-export const GET_CLUSTER_QUERY = 'cluster';
-export const GET_CLUSTER_RESOURCES_QUERY = 'cluster-resources';
-
-type OrphanedResourceResponse = {
-  data: OrphanedResource[];
-  pagination: {
-    total: number;
-    totalPages: number;
-    currentPage: number;
-    limit: number;
-  };
-};
-
-function HeaderSkeleton() {
-  return (
-    <div className="space-y-3">
-      <Skeleton className="h-8 w-[200px]" />
-      <Skeleton className="h-4 w-[300px]" />
-    </div>
-  );
-}
+import { OrphanedResourcesTable } from './orphaned-resources-table';
+import { ClusterDetailsCard } from './cluster-details-card';
+import { useClusterQueries } from '@orc/web/hooks/queries/use-cluster-queries';
+import { Cluster } from '@prisma/client';
 
 export default function ClusterDetailsPage() {
   const params = useParams();
   const clusterId = params.id as string;
+  const [timeRange, setTimeRange] = useState(1); // Default to 24h
 
-  // Separate query for basic cluster info (name, status, etc.)
-  const { data: basicInfo, isLoading: isLoadingBasicInfo } = useQuery({
-    queryKey: [GET_CLUSTER_QUERY, clusterId, 'basic'],
-    queryFn: () => getClusterBasicInfo(clusterId),
-  });
+  const { basicInfo, isLoadingBasicInfo, initialResourcesData, isLoadingResources, resourcesError, fetchOrphanedResources } =
+    useClusterQueries({ clusterId, timeRange });
 
-  const fetchOrphanedResources = async ({
-    page,
-    limit,
-    search,
-  }: {
-    page: number;
-    limit: number;
-    search?: string;
-  }): Promise<OrphanedResourceResponse> => {
-    const response = await getOrphanedResources({
-      clusterId,
-      page,
-      limit,
-      search,
-      status: 'PENDING', // Default status
-    });
-
-    if (!response.success) {
-      throw new Error('Failed to fetch cluster resources');
-    }
-
-    return {
-      data: (response.data! || []) as OrphanedResource[],
-      pagination: response.pagination!,
-    };
-  };
-
-  // Query for initial resources data
-  const {
-    data: initialResourcesData,
-    isLoading: isLoadingResources,
-    error,
-  } = useQuery<OrphanedResourceResponse>({
-    queryKey: [GET_CLUSTER_RESOURCES_QUERY, clusterId],
-    queryFn: () => fetchOrphanedResources({ page: 1, limit: 10 }),
-  });
-
-  if (error) {
+  if (resourcesError) {
     return (
       <DashboardShell>
         <Alert variant="destructive">
@@ -101,46 +38,22 @@ export default function ClusterDetailsPage() {
     <>
       <BreadcrumbItems
         items={[
-          {
-            name: 'Dashboard',
-            link: '/dashboard',
-          },
-          {
-            name: 'Clusters',
-            link: '/dashboard/clusters',
-          },
-          {
-            name: clusterName || 'Cluster',
-          },
+          { name: 'Dashboard', link: '/dashboard' },
+          { name: 'Clusters', link: '/dashboard/clusters' },
+          { name: clusterName || 'Cluster' },
         ]}
       />
-      <DashboardShell>
-        {isLoadingBasicInfo ? (
-          <HeaderSkeleton />
-        ) : (
-          <DashboardHeader heading={clusterName!} text="Here you can see a detailed view of your cluster and its resources." />
-        )}
-
-        <div className="space-y-4">
-          <span className="text-lg font-semibold">Orphaned Resources</span>
-          {isLoadingResources ? (
-            <DataTableSkeleton
-              columnCount={4}
-              searchableColumnCount={1}
-              filterableColumnCount={0}
-              actionsCount={1}
-              cellWidths={['10rem', '20rem', '12rem', '12rem']}
-              shrinkZero
-            />
-          ) : (
-            <DataTable<OrphanedResource>
-              columns={columns}
-              queryKey={`orphanedResources-${clusterId}`}
-              queryFn={fetchOrphanedResources}
-              initialData={initialResourcesData}
-              searchPlaceholder="Search orphaned resources..."
-            />
-          )}
+      <DashboardShell className="space-y-6">
+        <DashboardHeader heading={clusterName} text="Here you can see a detailed view of your cluster and its resources." />
+        <ClusterDetailsCard cluster={basicInfo?.success ? (basicInfo.cluster as Cluster) : undefined} isLoading={isLoadingBasicInfo} />
+        <div className="space-y-4 overflow-hidden">
+          <h2 className="text-lg font-semibold">Orphaned Resources</h2>
+          <OrphanedResourcesTable
+            clusterId={clusterId}
+            initialData={initialResourcesData}
+            isLoading={isLoadingResources}
+            fetchResources={fetchOrphanedResources}
+          />
         </div>
       </DashboardShell>
     </>

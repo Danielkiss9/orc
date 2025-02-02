@@ -51,20 +51,20 @@ export const columns: ColumnDef<GetAllClustersResponse>[] = [
     },
     header: ({ column }) => <SortButton column={column}>Orphan Resources</SortButton>,
     cell: ({ row }) => {
-      const { status, _count } = row.original;
+      const { status, orphanedResources } = row.original;
 
-      if (status === 'PENDING' || _count.orphanedResources === null) {
+      if (status === 'PENDING' || orphanedResources.length === 0) {
         return 'N/A';
       }
 
       return (
         <div className="flex items-center">
-          {_count.orphanedResources === 0 ? (
-            <Badge variant="success">{_count.orphanedResources}</Badge>
-          ) : _count.orphanedResources > 10 ? (
-            <Badge variant="error">{_count.orphanedResources}</Badge>
+          {orphanedResources.length === 0 ? (
+            <Badge variant="success">{orphanedResources.length}</Badge>
+          ) : orphanedResources.length > 10 ? (
+            <Badge variant="error">{orphanedResources.length}</Badge>
           ) : (
-            <Badge variant="warning">{_count.orphanedResources}</Badge>
+            <Badge variant="warning">{orphanedResources.length}</Badge>
           )}
         </div>
       );

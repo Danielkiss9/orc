@@ -1,6 +1,8 @@
+'use client';
+
+import { useEffect } from 'react';
 import { DashboardHeader } from '@orc/web/components/dashboard/header';
 import { DashboardShell } from '@orc/web/components/dashboard/shell';
-
 import {
   Card,
   CardContent,
@@ -13,176 +15,248 @@ import {
   TableHead,
   TableBody,
   TableCell,
+  Skeleton,
+  TooltipProvider,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
 } from '@orc/web/ui/custom-ui';
+import { Server, AlertTriangle, Trash2, Activity } from 'lucide-react';
+import { BarChart } from '@orc/web/components/charts/bar-chart';
+import { useQuery } from '@tanstack/react-query';
+import { getDashboardData } from '@orc/web/actions/dasboard';
+import { useRouter } from 'next/navigation';
+import { formatDistanceToNow, formatRelative } from 'date-fns';
 
-import { Bell, LineChart, Package, ShoppingCart } from 'lucide-react';
-import BasicLineChart from '../charts/basic-line-chart';
-import { User } from 'next-auth';
+interface DashboardStats {
+  totalClusters: number;
+  totalOrphanedResources: number;
+  clustersWithOrphanedResources: number;
+}
 
-export async function DashboardContent() {
-  // Todo: auth required
-  // const user = await getCurrentUser();
+interface ClusterData {
+  id: string;
+  name: string;
+  orphanedResources: number;
+  lastSeen: Date;
+}
 
-  // const globalAnalysis = await getGlobalAnalysis();
+interface DashboardData {
+  stats: DashboardStats;
+  orphanedResourcesByCluster: { clusterName: string; orphanedResources: number }[];
+  topClustersWithOrphanedResources: ClusterData[];
+}
 
+function StatsCardSkeleton() {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Skeleton className="h-4 w-[100px]" />
+        <Skeleton className="h-4 w-4" />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-8 w-[80px] mb-1" />
+        <Skeleton className="h-3 w-[120px]" />
+      </CardContent>
+    </Card>
+  );
+}
+
+function TableSkeleton() {
   return (
     <>
-      <DashboardShell>
-        {/* Recent alerts and tracked items */}
-        <DashboardHeader
-          heading="Dashboard"
-          text={`Welcome back, User!`}
-        />
-        {/* Summary cards */}
-        <div className="grid gap-6 mb-8 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Items Tracked
-              </CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                100
-              </div>
-              <p className="text-xs text-muted-foreground">+2 from last week</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Active Alerts
-              </CardTitle>
-              <Bell className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">7</div>
-              <p className="text-xs text-muted-foreground">3 triggered today</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Avg. Price Change
-              </CardTitle>
-              <LineChart className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                20%
-              </div>
-              <p className="text-xs text-muted-foreground">Across all items</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Potential Savings
-              </CardTitle>
-              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                $0
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Based on current alerts
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Price trends chart (placeholder) */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Price Trends</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BasicLineChart data={{}} itemName="Trends" />
-          </CardContent>
-        </Card>
-
-        {/* Recent alerts and tracked items */}
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Alerts</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-4">
-                <li className="flex justify-between items-center">
-                  <div>
-                    <p className="font-medium">Smartphone X</p>
-                    <p className="text-sm text-muted-foreground">
-                      Price dropped by 15%
-                    </p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    View
-                  </Button>
-                </li>
-                <li className="flex justify-between items-center">
-                  <div>
-                    <p className="font-medium">Laptop Y</p>
-                    <p className="text-sm text-muted-foreground">
-                      Back in stock
-                    </p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    View
-                  </Button>
-                </li>
-                <li className="flex justify-between items-center">
-                  <div>
-                    <p className="font-medium">Headphones Z</p>
-                    <p className="text-sm text-muted-foreground">
-                      Price increased by 5%
-                    </p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    View
-                  </Button>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Tracked Items</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Current Price</TableHead>
-                    <TableHead>Change</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell>Smartphone X</TableCell>
-                    <TableCell>$599.99</TableCell>
-                    <TableCell className="text-green-600">-$100.00</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Laptop Y</TableCell>
-                    <TableCell>$1,299.00</TableCell>
-                    <TableCell className="text-red-600">+$50.00</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Headphones Z</TableCell>
-                    <TableCell>$149.99</TableCell>
-                    <TableCell className="text-green-600">-$30.00</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
-      </DashboardShell>
+      {Array.from({ length: 5 }).map((_, index) => (
+        <TableRow key={index}>
+          <TableCell>
+            <Skeleton className="h-4 w-[120px]" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-[60px]" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-[60px]" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-8 w-[100px]" />
+          </TableCell>
+        </TableRow>
+      ))}
     </>
+  );
+}
+
+function LastSeenCell({ date }: { date: Date | null }) {
+  if (!date) return <span className="text-muted-foreground">Never</span>;
+
+  const now = new Date();
+  const diffInHours = Math.abs(now.getTime() - new Date(date).getTime()) / 36e5;
+
+  let color = 'text-green-500';
+  if (diffInHours > 3) {
+    color = 'text-red-500';
+  } else if (diffInHours > 1) {
+    color = 'text-yellow-500';
+  }
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className={`${color} font-medium`}>{formatDistanceToNow(new Date(date), { addSuffix: true })}</span>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Last seen on {formatRelative(new Date(date), new Date())}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+export function DashboardContent() {
+  const { push } = useRouter();
+
+  const { data, isLoading, error } = useQuery<DashboardData>({
+    queryKey: ['dashboardData'],
+    queryFn: async () => {
+      const response = await getDashboardData();
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fetch dashboard data');
+      }
+
+      return response.data as DashboardData;
+    },
+  });
+
+  useEffect(() => {
+    console.log('Dashboard state:', { isLoading, data, error });
+  }, [isLoading, data, error]);
+
+  if (error) {
+    return (
+      <DashboardShell>
+        <DashboardHeader heading="Dashboard" text="Overview of your clusters and orphaned resources" />
+        <div className="p-4 text-destructive">Error loading dashboard data: {error.message}</div>
+      </DashboardShell>
+    );
+  }
+
+  return (
+    <DashboardShell>
+      <DashboardHeader heading="Dashboard" text="Overview of your clusters and orphaned resources" />
+
+      <div className="grid gap-6 mb-8 md:grid-cols-2 lg:grid-cols-4">
+        {isLoading ? (
+          <>
+            <StatsCardSkeleton />
+            <StatsCardSkeleton />
+            <StatsCardSkeleton />
+            <StatsCardSkeleton />
+          </>
+        ) : (
+          <>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Clusters</CardTitle>
+                <Server className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{data?.stats.totalClusters}</div>
+                <p className="text-xs text-muted-foreground">Active Kubernetes clusters</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Orphaned Resources</CardTitle>
+                <Trash2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{data?.stats.totalOrphanedResources}</div>
+                <p className="text-xs text-muted-foreground">Across all clusters</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Clusters with Orphaned Resources</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{data?.stats.clustersWithOrphanedResources}</div>
+                <p className="text-xs text-muted-foreground">Requiring attention</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Average Health Score</CardTitle>
+                <Activity className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">N/A</div>
+                <p className="text-xs text-muted-foreground">Across all clusters</p>
+              </CardContent>
+            </Card>
+          </>
+        )}
+      </div>
+
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Top Orphaned Resources by Cluster</CardTitle>
+        </CardHeader>
+        <CardContent className="h-[400px]">
+          {isLoading ? (
+            <div className="w-full h-full bg-muted/10 animate-pulse rounded-lg" />
+          ) : (
+            <BarChart
+              data={data?.orphanedResourcesByCluster || []}
+              index="clusterName"
+              categories={[{ key: 'orphanedResources', label: 'Orphaned Resources' }]}
+              yAxisWidth={48}
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Top 5 Clusters with Orphaned Resources</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Cluster Name</TableHead>
+                <TableHead>Orphaned Resources</TableHead>
+                <TableHead>Last Update</TableHead>
+                <TableHead>Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableSkeleton />
+              ) : (
+                data?.topClustersWithOrphanedResources.map((cluster) => (
+                  <TableRow key={cluster.id}>
+                    <TableCell className="font-medium">{cluster.name}</TableCell>
+                    <TableCell>{cluster.orphanedResources}</TableCell>
+                    <TableCell>
+                      <LastSeenCell date={cluster.lastSeen} />
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="outline" size="sm" onClick={() => push(`/dashboard/clusters/${cluster.id}`)}>
+                        View Details
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </DashboardShell>
   );
 }

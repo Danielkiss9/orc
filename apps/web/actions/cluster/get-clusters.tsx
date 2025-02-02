@@ -9,48 +9,55 @@ export type GetClustersParams = {
   search?: string;
 };
 
-export async function getClusters({ page = 1, limit = 10, search }: GetClustersParams = {}) {
+export async function getClusters({ page = 1, limit = 10, search }: { page?: number; limit?: number; search?: string } = {}) {
   try {
     const user = await getCurrentUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
 
-    if (!user) {
-      return { success: false, error: 'Unauthorized' };
-    }
+    const skip = (page - 1) * limit;
 
+    // Build the where clause
     const where = {
       userId: user.id,
       ...(search && {
         name: {
           contains: search,
+          // mode: 'insensitive', - Add after we move to PostgreSQL
         },
       }),
     };
 
-    const [clusters, total] = await Promise.all([
-      prisma.cluster.findMany({
+    const clusters = await prisma.$transaction(async (tx) => {
+      const items = await tx.cluster.findMany({
         where,
         include: {
-          _count: {
+          orphanedResources: {
+            where: {
+              status: 'PENDING',
+            },
             select: {
-              orphanedResources: true,
+              id: true,
             },
           },
         },
         orderBy: {
           createdAt: 'desc',
         },
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
-      }),
-      prisma.cluster.count({ where }),
-    ]);
+      });
+
+      const total = await tx.cluster.count({ where });
+
+      return { items, total };
+    });
 
     return {
       success: true,
-      clusters,
+      clusters: clusters.items,
       pagination: {
-        total,
-        totalPages: Math.ceil(total / limit),
+        total: clusters.total,
+        totalPages: Math.ceil(clusters.total / limit),
         currentPage: page,
         limit,
       },
