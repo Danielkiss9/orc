@@ -6,14 +6,17 @@ import { DashboardHeader } from '@orc/web/components/dashboard/header';
 import { DashboardShell } from '@orc/web/components/dashboard/shell';
 import { columns } from './columns';
 import { DataTable } from '@orc/web/components/data-table/data-table';
-import type { Cluster, OrphanedResource } from '@prisma/client';
+import type { Cluster, OrphanedResource, Snapshot } from '@prisma/client';
 import { DataTableSkeleton } from '@orc/web/components/shared/advanced-skeleton';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getClusters } from '@orc/web/actions/cluster';
 import { ClusterConnectModal } from '@orc/web/components/modals/cluster-connect-modal';
 
-export type GetAllClustersResponse = Cluster & { orphanedResources: OrphanedResource[] };
-
+export type GetAllClustersResponse = Cluster & {
+  lastSnapshot: Snapshot;
+  orphanedResources: OrphanedResource[];
+  orphanedResourcesCount: number;
+};
 interface ClusterQueryResult {
   data: GetAllClustersResponse[];
   pagination: {

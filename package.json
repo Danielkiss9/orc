@@ -11,6 +11,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@aws-sdk/client-pricing": "^3.738.0",
     "@hookform/resolvers": "^3.3.4",
     "@kubernetes/client-node": "^1.0.0",
     "@nestjs/common": "^10.0.2",

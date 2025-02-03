@@ -9,10 +9,11 @@ interface GetOrphanedResourcesParams {
   page?: number;
   limit?: number;
   search?: string;
+  sort?: {[field: string]: string};
   status?: OrphanedResourceStatus;
 }
 
-export async function getOrphanedResources({ clusterId, page = 1, limit = 10, search, status }: GetOrphanedResourcesParams) {
+export async function getOrphanedResources({ clusterId, page = 1, limit = 10, search, status, sort = {createdAt: 'desc'} }: GetOrphanedResourcesParams) {
   try {
     const user = await getCurrentUser();
 
@@ -33,7 +34,16 @@ export async function getOrphanedResources({ clusterId, page = 1, limit = 10, se
     }
 
     const where = {
-      clusterId,
+      snapshot: {
+        clusterId,
+        id: (
+          await prisma.snapshot.findFirst({
+            where: { clusterId },
+            orderBy: { createdAt: 'desc' },
+            select: { id: true },
+          })
+        )?.id,
+      },
       ...(status && { status }),
       ...(search && {
         OR: [{ name: { contains: search } }, { kind: { contains: search } }, { namespace: { contains: search } }],
@@ -43,9 +53,7 @@ export async function getOrphanedResources({ clusterId, page = 1, limit = 10, se
     const [resources, total] = await Promise.all([
       prisma.orphanedResource.findMany({
         where,
-        orderBy: {
-          createdAt: 'desc',
-        },
+        orderBy: sort,
         skip: (page - 1) * limit,
         take: limit,
       }),
