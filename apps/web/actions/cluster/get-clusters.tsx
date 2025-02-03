@@ -9,7 +9,7 @@ export type GetClustersParams = {
   search?: string;
 };
 
-export async function getClusters({ page = 1, limit = 10, search }: { page?: number; limit?: number; search?: string } = {}) {
+export async function getClusters({ page = 1, limit = 10, search, sort = {createdAt: 'desc'} }: { page?: number; limit?: number; search?: string; sort?: {[field: string]: string} } = {}) {
   try {
     const user = await getCurrentUser();
     if (!user) return { success: false, error: 'Unauthorized' };
@@ -55,9 +55,7 @@ export async function getClusters({ page = 1, limit = 10, search }: { page?: num
             },
           },
         },
-        orderBy: {
-          createdAt: 'desc',
-        },
+        orderBy: sort,
         skip,
         take: limit,
       });

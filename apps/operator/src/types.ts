@@ -9,6 +9,7 @@ export interface K8sResource {
   metadata?: V1ObjectMeta;
   kind?: string;
   apiVersion?: string;
+  spec?: any;
 }
 
 export interface CleanupResult<T extends K8sResource> {

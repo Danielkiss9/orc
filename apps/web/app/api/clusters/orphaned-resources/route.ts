@@ -1,4 +1,5 @@
 import { prisma } from '@orc/prisma';
+import { getResourceCost } from '@orc/web/lib/costs/costs';
 import { jwtVerify } from 'jose';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -24,9 +25,11 @@ const orphanedResourceSchema = z.object({
     })
     .nullable()
     .optional(),
+  spec: z.unknown().optional(),
   reason: z.string().min(1, 'Reason is required'),
   labels: z.record(z.string()).optional(),
   annotations: z.record(z.string()).optional(),
+  cost: z.number().optional(),
 });
 
 const reportSchema = z.object({
@@ -83,6 +86,14 @@ export async function POST(request: Request) {
       data: { lastSeen: new Date() },
     });
 
+    for (const resource of parsedReport.data.orphanedResources) {
+      const cost = await getResourceCost(resource);
+      console.log('Cost:', cost);
+      if (cost != undefined) {
+        resource.cost = cost;
+      }
+    }
+
     // Create new snapshot with orphaned resources
     await prisma.$transaction(async (tx) => {
       const snapshot = await tx.snapshot.create({
@@ -96,6 +107,7 @@ export async function POST(request: Request) {
               namespace: resource.namespace,
               uid: resource.uid,
               age: resource.age ? new Date(resource.age) : null,
+              cost: resource.cost,
               reason: resource.reason,
               owner: resource.owner?.name,
             })),
