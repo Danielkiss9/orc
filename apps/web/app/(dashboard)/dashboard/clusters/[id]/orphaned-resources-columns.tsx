@@ -76,9 +76,9 @@ export const columns: ColumnDef<OrphanedResource>[] = [
         <div className="flex items-center justify-center">
           <div
             className={`rounded-lg flex items-center justify-center h-8 w-20 ${bgColor} ${textColor}`}
-            title={cost != null ? `$${cost}` : 'N/A'}
+            title={cost != null ? `${cost}$` : 'N/A'}
           >
-            {cost != null ? `$${cost}` : 'N/A'}
+            {cost != null ? `${cost}$` : 'N/A'}
           </div>
         </div>
       );
