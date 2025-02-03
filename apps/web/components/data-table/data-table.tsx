@@ -17,6 +17,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@orc/web/ui/custom-ui';
 import { DataTablePagination } from './data-table-pagination';
 import { DataTableToolbar } from './data-table-toolbar';
+import * as Dialog from '@radix-ui/react-dialog'; // Import Radix Dialog
 
 interface DataTableProps<TData> {
   columns: ColumnDef<TData, any>[];
@@ -47,6 +48,7 @@ interface DataTableProps<TData> {
     onClick: () => void;
   }[];
   showViewOptions?: boolean;
+  onRowClick?: (row: any) => any
 }
 
 export function DataTable<TData>({
@@ -57,6 +59,7 @@ export function DataTable<TData>({
   initialData,
   toolbarActions = [],
   showViewOptions = true,
+  onRowClick
 }: DataTableProps<TData>) {
   const queryClient = useQueryClient();
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
@@ -137,7 +140,7 @@ export function DataTable<TData>({
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'} onClick={() => onRowClick && onRowClick(row)} className={onRowClick ? "cursor-pointer" : ""}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                   ))}
