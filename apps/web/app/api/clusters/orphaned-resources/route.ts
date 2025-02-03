@@ -110,6 +110,7 @@ export async function POST(request: Request) {
               cost: resource.cost,
               reason: resource.reason,
               owner: resource.owner?.name,
+              spec: JSON.stringify(resource.spec)
             })),
           },
         },
