@@ -51,9 +51,9 @@ export const columns: ColumnDef<GetAllClustersResponse>[] = [
     },
     header: ({ column }) => <SortButton column={column}>Orphan Resources</SortButton>,
     cell: ({ row }) => {
-      const { status, orphanedResources } = row.original;
+      const { status, lastSnapshot, orphanedResources } = row.original;
 
-      if (status === 'PENDING' || orphanedResources.length === 0) {
+      if (status === 'PENDING' || lastSnapshot === null) {
         return 'N/A';
       }
 

@@ -33,7 +33,16 @@ export async function getOrphanedResources({ clusterId, page = 1, limit = 10, se
     }
 
     const where = {
-      clusterId,
+      snapshot: {
+        clusterId,
+        id: (
+          await prisma.snapshot.findFirst({
+            where: { clusterId },
+            orderBy: { createdAt: 'desc' },
+            select: { id: true },
+          })
+        )?.id,
+      },
       ...(status && { status }),
       ...(search && {
         OR: [{ name: { contains: search } }, { kind: { contains: search } }, { namespace: { contains: search } }],

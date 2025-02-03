@@ -27,6 +27,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getDashboardData } from '@orc/web/actions/dasboard';
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow, formatRelative } from 'date-fns';
+import { NoData } from '@orc/web/components/shared/no-data';
 
 interface DashboardStats {
   totalClusters: number;
@@ -161,7 +162,7 @@ export function DashboardContent() {
                 <Server className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{data?.stats.totalClusters}</div>
+                <div className="text-2xl font-bold">{data?.stats.totalClusters ?? 'N/A'}</div>
                 <p className="text-xs text-muted-foreground">Active Kubernetes clusters</p>
               </CardContent>
             </Card>
@@ -172,7 +173,7 @@ export function DashboardContent() {
                 <Trash2 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{data?.stats.totalOrphanedResources}</div>
+                <div className="text-2xl font-bold">{data?.stats.totalOrphanedResources ?? 'N/A'}</div>
                 <p className="text-xs text-muted-foreground">Across all clusters</p>
               </CardContent>
             </Card>
@@ -183,7 +184,7 @@ export function DashboardContent() {
                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{data?.stats.clustersWithOrphanedResources}</div>
+                <div className="text-2xl font-bold">{data?.stats.clustersWithOrphanedResources ?? 'N/A'}</div>
                 <p className="text-xs text-muted-foreground">Requiring attention</p>
               </CardContent>
             </Card>
@@ -209,18 +210,20 @@ export function DashboardContent() {
         <CardContent className="h-[400px]">
           {isLoading ? (
             <div className="w-full h-full bg-muted/10 animate-pulse rounded-lg" />
-          ) : (
+          ) : data?.orphanedResourcesByCluster && data.orphanedResourcesByCluster.length > 0 ? (
             <BarChart
-              data={data?.orphanedResourcesByCluster || []}
+              data={data.orphanedResourcesByCluster}
               index="clusterName"
               categories={[{ key: 'orphanedResources', label: 'Orphaned Resources' }]}
               yAxisWidth={48}
             />
+          ) : (
+            <NoData message="No orphaned resources data available" />
           )}
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className='mb-8'>
         <CardHeader>
           <CardTitle>Top 5 Clusters with Orphaned Resources</CardTitle>
         </CardHeader>
@@ -237,8 +240,8 @@ export function DashboardContent() {
             <TableBody>
               {isLoading ? (
                 <TableSkeleton />
-              ) : (
-                data?.topClustersWithOrphanedResources.map((cluster) => (
+              ) : data?.topClustersWithOrphanedResources && data.topClustersWithOrphanedResources.length > 0 ? (
+                data.topClustersWithOrphanedResources.map((cluster) => (
                   <TableRow key={cluster.id}>
                     <TableCell className="font-medium">{cluster.name}</TableCell>
                     <TableCell>{cluster.orphanedResources}</TableCell>
@@ -252,6 +255,12 @@ export function DashboardContent() {
                     </TableCell>
                   </TableRow>
                 ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4}>
+                    <NoData message="No cluster data available" />
+                  </TableCell>
+                </TableRow>
               )}
             </TableBody>
           </Table>

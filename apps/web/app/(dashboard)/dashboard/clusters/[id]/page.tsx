@@ -10,23 +10,37 @@ import { DashboardHeader } from '@orc/web/components/dashboard/header';
 import { OrphanedResourcesTable } from './orphaned-resources-table';
 import { ClusterDetailsCard } from './cluster-details-card';
 import { useClusterQueries } from '@orc/web/hooks/queries/use-cluster-queries';
-import { Cluster } from '@prisma/client';
+import type { Cluster } from '@prisma/client';
+import { OrphanedResourcesChart } from './orphaned-resources-chart';
 
 export default function ClusterDetailsPage() {
   const params = useParams();
   const clusterId = params.id as string;
-  const [timeRange, setTimeRange] = useState(1); // Default to 24h
+  const [timeRange, setTimeRange] = useState(24); // Default to 24h
 
-  const { basicInfo, isLoadingBasicInfo, initialResourcesData, isLoadingResources, resourcesError, fetchOrphanedResources } =
-    useClusterQueries({ clusterId, timeRange });
+  const {
+    basicInfo,
+    isLoadingBasicInfo,
+    initialResourcesData,
+    isLoadingResources,
+    resourcesError,
+    fetchOrphanedResources,
+    timeseriesData,
+    isLoadingTimeseriesData,
+    timeseriesError,
+  } = useClusterQueries({ clusterId, timeRange });
 
-  if (resourcesError) {
+  const handleTimeRangeChange = (newRange: number) => {
+    setTimeRange(newRange);
+  };
+
+  if (resourcesError || timeseriesError) {
     return (
       <DashboardShell>
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
-          <AlertDescription>Failed to load cluster. Please try again later.</AlertDescription>
+          <AlertDescription>Failed to load cluster data. Please try again later.</AlertDescription>
         </Alert>
       </DashboardShell>
     );
@@ -46,6 +60,7 @@ export default function ClusterDetailsPage() {
       <DashboardShell className="space-y-6">
         <DashboardHeader heading={clusterName} text="Here you can see a detailed view of your cluster and its resources." />
         <ClusterDetailsCard cluster={basicInfo?.success ? (basicInfo.cluster as Cluster) : undefined} isLoading={isLoadingBasicInfo} />
+        <OrphanedResourcesChart data={timeseriesData?.data || []} isLoading={isLoadingTimeseriesData} onTimeRangeChange={handleTimeRangeChange} />
         <div className="space-y-4 overflow-hidden">
           <h2 className="text-lg font-semibold">Orphaned Resources</h2>
           <OrphanedResourcesTable
