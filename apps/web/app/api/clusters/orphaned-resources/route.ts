@@ -1,5 +1,6 @@
 import { prisma } from '@orc/prisma';
 import { getResourceCost } from '@orc/web/lib/costs/costs';
+import { updateClusterScore } from '@orc/web/lib/score';
 import { jwtVerify } from 'jose';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -88,7 +89,6 @@ export async function POST(request: Request) {
 
     for (const resource of parsedReport.data.orphanedResources) {
       const cost = await getResourceCost(resource);
-      console.log('Cost:', cost);
       if (cost != undefined) {
         resource.cost = cost;
       }
@@ -117,6 +117,8 @@ export async function POST(request: Request) {
 
       return snapshot;
     });
+
+    await updateClusterScore(parsedPayload.data.clusterId, parsedReport.data.summary);
 
     return NextResponse.json({ success: true });
   } catch (error) {
