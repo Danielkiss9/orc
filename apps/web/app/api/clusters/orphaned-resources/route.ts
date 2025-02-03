@@ -84,7 +84,7 @@ export async function POST(request: Request) {
     // Update cluster last seen
     await prisma.cluster.update({
       where: { id: parsedPayload.data.clusterId },
-      data: { lastSeen: new Date() },
+      data: { lastSeen: new Date(), status: 'ACTIVE' },
     });
 
     for (const resource of parsedReport.data.orphanedResources) {
