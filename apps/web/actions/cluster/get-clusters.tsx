@@ -31,12 +31,27 @@ export async function getClusters({ page = 1, limit = 10, search }: { page?: num
       const items = await tx.cluster.findMany({
         where,
         include: {
-          orphanedResources: {
-            where: {
-              status: 'PENDING',
+          snapshots: {
+            orderBy: {
+              createdAt: 'desc',
             },
-            select: {
-              id: true,
+            take: 1,
+            include: {
+              orphanedResources: {
+                where: {
+                  status: 'PENDING',
+                },
+                select: {
+                  id: true,
+                  kind: true,
+                  name: true,
+                  namespace: true,
+                  status: true,
+                  createdAt: true,
+                  discoveredAt: true,
+                  deletedAt: true,
+                },
+              },
             },
           },
         },
@@ -47,9 +62,17 @@ export async function getClusters({ page = 1, limit = 10, search }: { page?: num
         take: limit,
       });
 
-      const total = await tx.cluster.count({ where });
+      // Transform the data to make it easier to work with
+      const transformedItems = items.map((cluster) => ({
+        ...cluster,
+        lastSnapshot: cluster.snapshots[0] || null,
+        orphanedResources: cluster.snapshots[0]?.orphanedResources || [],
+        orphanedResourcesCount: cluster.snapshots[0]?.orphanedResources.length || 0,
+        snapshots: undefined, // Remove the original snapshots array
+      }));
 
-      return { items, total };
+      const total = await tx.cluster.count({ where });
+      return { items: transformedItems, total };
     });
 
     return {
