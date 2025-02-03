@@ -80,6 +80,7 @@ CREATE TABLE "OrphanedResource" (
     "deletedAt" DATETIME,
     "owner" TEXT,
     "reason" TEXT,
+    "cost" INTEGER,
     "status" TEXT NOT NULL DEFAULT 'PENDING',
     CONSTRAINT "OrphanedResource_snapshotId_fkey" FOREIGN KEY ("snapshotId") REFERENCES "Snapshot" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );

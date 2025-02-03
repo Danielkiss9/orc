@@ -4,6 +4,12 @@ import { getResourceAge } from '@orc/utils';
 import { SortButton } from '@orc/web/components/data-table/utils';
 import { Badge, HoverCard, HoverCardContent, HoverCardTrigger } from '@orc/web/ui/custom-ui';
 import { InfoIcon } from 'lucide-react';
+function getCostStyle(cost: number | null): { bgColor: string; textColor: string } {
+  if (cost === null) return { bgColor: 'bg-gray-300', textColor: 'text-gray-700' }; // No cost
+  if (cost < 10) return { bgColor: 'bg-green-400', textColor: 'text-black' }; // Low cost
+  if (cost < 50) return { bgColor: 'bg-yellow-400', textColor: 'text-black' }; // Medium cost
+  return { bgColor: 'bg-red-400', textColor: 'text-white' }; // High cost
+}
 
 export const columns: ColumnDef<OrphanedResource>[] = [
   {
@@ -57,6 +63,25 @@ export const columns: ColumnDef<OrphanedResource>[] = [
       }
 
       return 'N/A';
+    },
+  },
+  {
+    accessorKey: 'cost',
+    header: ({ column }) => <SortButton column={column}>Cost</SortButton>,
+    cell: ({ row }) => {
+      const cost = row.original.cost;
+      const { bgColor, textColor } = getCostStyle(cost);
+  
+      return (
+        <div className="flex items-center justify-center">
+          <div
+            className={`rounded-lg flex items-center justify-center h-8 w-20 ${bgColor} ${textColor}`}
+            title={cost != null ? `$${cost}` : 'N/A'}
+          >
+            {cost != null ? `$${cost}` : 'N/A'}
+          </div>
+        </div>
+      );
     },
   },
   {

@@ -22,12 +22,13 @@ export function useClusterQueries({ clusterId, timeRange }: UseClusterQueriesPro
     queryFn: () => getClusterBasicInfo(clusterId),
   });
 
-  const fetchOrphanedResources = async ({ page, limit, search }: { page: number; limit: number; search?: string }) => {
+  const fetchOrphanedResources = async ({ page, limit, search, sort }: { page: number; limit: number; search?: string; sort?: {[field: string]: string} }) => {
     const response = await getOrphanedResources({
       clusterId,
       page,
       limit,
       search,
+      sort,
       status: 'PENDING',
     });
 

@@ -23,6 +23,7 @@ export class ReporterService {
           reason,
           labels: resource.metadata.labels,
           annotations: resource.metadata.annotations,
+          spec: resource.spec,
         })),
       ),
       summary: report.summary,

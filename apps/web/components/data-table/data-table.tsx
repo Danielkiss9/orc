@@ -22,7 +22,7 @@ interface DataTableProps<TData> {
   columns: ColumnDef<TData, any>[];
   searchPlaceholder?: string;
   queryKey: string;
-  queryFn: (params: { page: number; limit: number; search?: string }) => Promise<{
+  queryFn: (params: { page: number; limit: number; search?: string; sort: {[field: string]: string} }) => Promise<{
     data: TData[];
     pagination: {
       total: number;
@@ -70,12 +70,13 @@ export function DataTable<TData>({
   const [isFirstLoad, setIsFirstLoad] = React.useState(true);
 
   const { data } = useQuery({
-    queryKey: [queryKey, pageIndex, pageSize, searchQuery],
+    queryKey: [queryKey, pageIndex, pageSize, searchQuery, sorting],
     queryFn: async () => {
       const result = await queryFn({
         page: pageIndex + 1,
         limit: pageSize,
         search: searchQuery,
+        sort: sorting.reduce((acc, sort) => ({ ...acc, [sort.id]: sort.desc ? 'desc' : 'asc' }), {}),
       });
       setIsFirstLoad(false);
       return result;

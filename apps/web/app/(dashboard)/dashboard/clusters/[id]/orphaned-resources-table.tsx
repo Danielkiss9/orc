@@ -17,7 +17,7 @@ interface OrphanedResourcesTableProps {
     };
   };
   isLoading?: boolean;
-  fetchResources: (params: { page: number; limit: number; search?: string }) => Promise<any>;
+  fetchResources: (params: { page: number; limit: number; search?: string; sort: {[field: string]: string} }) => Promise<any>;
 }
 
 export function OrphanedResourcesTable({ clusterId, initialData, isLoading, fetchResources }: OrphanedResourcesTableProps) {
