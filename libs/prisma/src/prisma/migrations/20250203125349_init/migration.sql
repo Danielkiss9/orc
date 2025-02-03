@@ -58,9 +58,18 @@ CREATE TABLE "Cluster" (
 );
 
 -- CreateTable
+CREATE TABLE "Snapshot" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdBy" TEXT,
+    "clusterId" TEXT NOT NULL,
+    CONSTRAINT "Snapshot_clusterId_fkey" FOREIGN KEY ("clusterId") REFERENCES "Cluster" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
 CREATE TABLE "OrphanedResource" (
     "id" TEXT NOT NULL PRIMARY KEY,
-    "clusterId" TEXT NOT NULL,
+    "snapshotId" TEXT NOT NULL,
     "kind" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "namespace" TEXT,
@@ -72,8 +81,11 @@ CREATE TABLE "OrphanedResource" (
     "owner" TEXT,
     "reason" TEXT,
     "status" TEXT NOT NULL DEFAULT 'PENDING',
-    CONSTRAINT "OrphanedResource_clusterId_fkey" FOREIGN KEY ("clusterId") REFERENCES "Cluster" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT "OrphanedResource_snapshotId_fkey" FOREIGN KEY ("snapshotId") REFERENCES "Snapshot" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+
+-- CreateIndex
+CREATE INDEX "Account_userId_idx" ON "Account"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "Account"("provider", "providerAccountId");
@@ -85,7 +97,13 @@ CREATE UNIQUE INDEX "Session_sessionToken_key" ON "Session"("sessionToken");
 CREATE UNIQUE INDEX "Session_accessToken_key" ON "Session"("accessToken");
 
 -- CreateIndex
+CREATE INDEX "Session_userId_idx" ON "Session"("userId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE INDEX "User_email_idx" ON "User"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Cluster_token_key" ON "Cluster"("token");
@@ -94,4 +112,37 @@ CREATE UNIQUE INDEX "Cluster_token_key" ON "Cluster"("token");
 CREATE UNIQUE INDEX "Cluster_registrationId_key" ON "Cluster"("registrationId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "OrphanedResource_clusterId_uid_key" ON "OrphanedResource"("clusterId", "uid");
+CREATE INDEX "Cluster_userId_idx" ON "Cluster"("userId");
+
+-- CreateIndex
+CREATE INDEX "Cluster_status_idx" ON "Cluster"("status");
+
+-- CreateIndex
+CREATE INDEX "Cluster_lastSeen_idx" ON "Cluster"("lastSeen");
+
+-- CreateIndex
+CREATE INDEX "Snapshot_clusterId_idx" ON "Snapshot"("clusterId");
+
+-- CreateIndex
+CREATE INDEX "Snapshot_createdAt_idx" ON "Snapshot"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "OrphanedResource_snapshotId_idx" ON "OrphanedResource"("snapshotId");
+
+-- CreateIndex
+CREATE INDEX "OrphanedResource_status_idx" ON "OrphanedResource"("status");
+
+-- CreateIndex
+CREATE INDEX "OrphanedResource_kind_idx" ON "OrphanedResource"("kind");
+
+-- CreateIndex
+CREATE INDEX "OrphanedResource_namespace_idx" ON "OrphanedResource"("namespace");
+
+-- CreateIndex
+CREATE INDEX "OrphanedResource_discoveredAt_idx" ON "OrphanedResource"("discoveredAt");
+
+-- CreateIndex
+CREATE INDEX "OrphanedResource_deletedAt_idx" ON "OrphanedResource"("deletedAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "OrphanedResource_snapshotId_uid_key" ON "OrphanedResource"("snapshotId", "uid");

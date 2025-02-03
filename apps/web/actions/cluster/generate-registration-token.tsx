@@ -24,7 +24,7 @@ export async function generateRegistrationToken(clusterName: string) {
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('1h')
       .sign(secret);
-
+      
     await redisClient.setex(
       `pending_registration:${registrationId}`,
       3600,
