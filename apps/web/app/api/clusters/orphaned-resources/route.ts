@@ -90,7 +90,7 @@ export async function POST(request: Request) {
     for (const resource of parsedReport.data.orphanedResources) {
       const cost = await getResourceCost(resource);
       if (cost != undefined) {
-        resource.cost = cost;
+        resource.cost = Math.round(cost * 100) / 100;
       }
     }
 

@@ -75,7 +75,7 @@ export const columns: ColumnDef<OrphanedResource>[] = [
       return (
         <div className="flex items-center justify-center">
           <Badge variant={variant} className="text-xs px-2 py-0.5">
-            {cost != null ? `$${cost}` : 'N/A'}
+            {cost != null ? `{cost}$` : 'N/A'}
           </Badge>
         </div>
       );

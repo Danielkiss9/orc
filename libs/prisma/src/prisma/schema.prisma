@@ -103,7 +103,7 @@ model OrphanedResource {
     deletedAt    DateTime?
     owner        String?
     reason       String?
-    cost         Int?
+    cost         Float?
     status       OrphanedResourceStatus @default(PENDING)
 
     @@unique([snapshotId, uid])
