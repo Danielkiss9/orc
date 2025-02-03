@@ -1,10 +1,10 @@
-class CostsCalculator {
-    calculateNodeCost(instanceType: string, capacity: string, type: string) : number {
+export class CostsCalculator {
+    calculateNodeCost(instanceType: string, capacity: string, type: string)  {
     }
 
-    calculatePvcCost(capacity: string, storageType: string, storageClass) : number {
+    calculatePvcCost(capacity: string, storageType: string, storageClass)  {
     }
 
-    calculateLoadBalancercCost(type: string) : number {
+    calculateLoadBalancercCost(type: string)  {
     }
 }
